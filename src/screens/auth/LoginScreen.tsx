@@ -11,6 +11,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Image,
 } from "react-native";
 import api, { CURRENT_HOST, setCustomHost } from "../../services/api";
 import { saveAuthData, UserSession } from "../../services/storage";
@@ -85,10 +86,15 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
                 >
                     {/* Header */}
                     <View style={styles.header}>
+                        <Image
+                            source={require("../../assets/images/logo.png")}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
                         <View style={styles.badge}>
-                            <Text style={styles.badgeText}>🛒 MART SUPPLY & ORDER</Text>
+                            <Text style={styles.badgeText}>🛒 ARIHANT BAZAR</Text>
                         </View>
-                        <Text style={styles.title}>मार्ट फ्रँचायझी सिस्टीम</Text>
+                        <Text style={styles.title}>अरिहंत बाजार फ्रँचायझी</Text>
                         <Text style={styles.subtitle}>
                             दैनिक मटेरियल मागणी आणि बिल व्यवस्थापन
                         </Text>
@@ -233,7 +239,13 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 20,
+    },
+    logoImage: {
+        width: 100,
+        height: 100,
+        marginBottom: 12,
+        borderRadius: 20,
     },
     badge: {
         backgroundColor: "#DCFCE7",

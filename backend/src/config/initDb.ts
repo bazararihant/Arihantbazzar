@@ -57,6 +57,16 @@ export const initializeDatabase = async () => {
       );
     `);
 
+    // 5. Create Keep Alive Ping Table (Prevents Render and Supabase from sleeping)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS keep_alive_pings (
+        id INT PRIMARY KEY DEFAULT 1,
+        service_name VARCHAR(100) DEFAULT 'render_backend',
+        last_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ping_count INT DEFAULT 1
+      );
+    `);
+
     console.log("Database tables verified / created successfully.");
 
     // 5. Seed Franchises if none exist
