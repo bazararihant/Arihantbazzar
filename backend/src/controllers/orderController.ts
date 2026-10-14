@@ -580,6 +580,15 @@ export const getExpenseReport = async (req: AuthRequest, res: Response) => {
         const conditions: string[] = [];
         const params: any[] = [];
 
+        const user = req.user!;
+        if (user.role === "franchise" && user.franchise_id) {
+            params.push(user.franchise_id);
+            conditions.push(`o.franchise_id = $${params.length}`);
+        } else if (req.query.franchise_id) {
+            params.push(Number(req.query.franchise_id));
+            conditions.push(`o.franchise_id = $${params.length}`);
+        }
+
         if (start_date) {
             params.push(start_date);
             conditions.push(`DATE(o.created_at) >= $${params.length}`);

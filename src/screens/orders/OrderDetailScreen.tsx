@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import api, { getMediaUrl } from "../../services/api";
 import { UserSession } from "../../services/storage";
+import { ORDER_UNITS, formatUnitMarathi } from "../../utils/unitHelper";
 
 interface Props {
     orderId: number;
@@ -48,7 +49,7 @@ interface OrderDetail {
     items: OrderItem[];
 }
 
-const UNITS = ["kg", "litre", "packet", "box", "pcs", "bag", "gram"];
+const UNITS = ORDER_UNITS;
 
 export default function OrderDetailScreen({ orderId, currentUser, onBack }: Props) {
     const insets = useSafeAreaInsets();
@@ -530,7 +531,7 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
     const progressPercent = order.items.length > 0 ? Math.round((checkedCount / order.items.length) * 100) : 0;
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Top Header Bar */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={onBack}>
@@ -679,7 +680,7 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                                                     isChecked && styles.checkItemQtyDone,
                                                 ]}
                                             >
-                                                {item.quantity} {item.unit}
+                                                {item.quantity} {formatUnitMarathi(item.unit)}
                                             </Text>
                                         </View>
                                         <TouchableOpacity
@@ -947,20 +948,20 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                         {UNITS.map((u) => (
                                             <TouchableOpacity
-                                                key={u}
+                                                key={u.value}
                                                 style={[
                                                     styles.modalUnitPill,
-                                                    editItemUnit === u && styles.modalUnitPillActive,
+                                                    editItemUnit === u.value && styles.modalUnitPillActive,
                                                 ]}
-                                                onPress={() => setEditItemUnit(u)}
+                                                onPress={() => setEditItemUnit(u.value)}
                                             >
                                                 <Text
                                                     style={[
                                                         styles.modalUnitPillText,
-                                                        editItemUnit === u && styles.modalUnitPillTextActive,
+                                                        editItemUnit === u.value && styles.modalUnitPillTextActive,
                                                     ]}
                                                 >
-                                                    {u}
+                                                    {u.label}
                                                 </Text>
                                             </TouchableOpacity>
                                         ))}
@@ -1027,20 +1028,20 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                         {UNITS.map((u) => (
                                             <TouchableOpacity
-                                                key={u}
+                                                key={u.value}
                                                 style={[
                                                     styles.modalUnitPill,
-                                                    newItemUnit === u && styles.modalUnitPillActive,
+                                                    newItemUnit === u.value && styles.modalUnitPillActive,
                                                 ]}
-                                                onPress={() => setNewItemUnit(u)}
+                                                onPress={() => setNewItemUnit(u.value)}
                                             >
                                                 <Text
                                                     style={[
                                                         styles.modalUnitPillText,
-                                                        newItemUnit === u && styles.modalUnitPillTextActive,
+                                                        newItemUnit === u.value && styles.modalUnitPillTextActive,
                                                     ]}
                                                 >
-                                                    {u}
+                                                    {u.label}
                                                 </Text>
                                             </TouchableOpacity>
                                         ))}

@@ -19,6 +19,7 @@ interface Props {
     onCreateOrder: () => void;
     onViewOrder: (orderId: number) => void;
     onViewHistory?: () => void;
+    onViewLedger?: () => void;
 }
 
 interface OrderItem {
@@ -41,6 +42,7 @@ export default function BranchDashboardScreen({
     onCreateOrder,
     onViewOrder,
     onViewHistory,
+    onViewLedger,
 }: Props) {
     const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -121,7 +123,7 @@ export default function BranchDashboardScreen({
     };
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Top Bar */}
             <View style={styles.topBar}>
                 <View style={styles.branchHeader}>
@@ -185,6 +187,28 @@ export default function BranchDashboardScreen({
                             </Text>
                         </View>
                         <Text style={styles.createBtnArrow}>➔</Text>
+                    </View>
+                </TouchableOpacity>
+
+                {/* Cash Ledger Action Button */}
+                <TouchableOpacity
+                    style={styles.ledgerBtn}
+                    onPress={onViewLedger}
+                    activeOpacity={0.85}
+                >
+                    <View style={styles.createBtnContent}>
+                        <View style={styles.moneyCircle}>
+                            <Text style={styles.moneyIcon}>💰</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.ledgerBtnTitle}>
+                                रोख हिशोब व ताळेबंद (Cash Ledger)
+                            </Text>
+                            <Text style={styles.ledgerBtnSubtitle}>
+                                ॲडमिनसोबतचा पैशांचा हिशोब व बाकी ताळेबंद पहा
+                            </Text>
+                        </View>
+                        <Text style={styles.ledgerBtnArrow}>➔</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -356,7 +380,7 @@ const styles = StyleSheet.create({
     topBar: {
         backgroundColor: "#FFFFFF",
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingVertical: 10,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
@@ -637,5 +661,46 @@ const styles = StyleSheet.create({
     },
     billBadgeTextPending: {
         color: "#D97706",
+    },
+    ledgerBtn: {
+        backgroundColor: "#0F172A",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 20,
+        borderWidth: 1.5,
+        borderColor: "#38BDF8",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    moneyCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "rgba(56, 189, 248, 0.15)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+    },
+    moneyIcon: {
+        fontSize: 22,
+    },
+    ledgerBtnTitle: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#FFFFFF",
+    },
+    ledgerBtnSubtitle: {
+        fontSize: 11,
+        color: "#94A3B8",
+        marginTop: 2,
+    },
+    ledgerBtnArrow: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#38BDF8",
+        marginLeft: 8,
     },
 });

@@ -33,6 +33,7 @@ export const authenticateToken = (
       id: number;
       email: string;
       role: string;
+      franchise_id?: number | null;
     };
 
     req.user = decoded;

@@ -18,6 +18,7 @@ interface Props {
     onLogout: () => void;
     onViewOrder: (orderId: number) => void;
     onViewHistory: (tab?: "orders" | "report") => void;
+    onViewLedger: () => void;
 }
 
 interface OrderItem {
@@ -48,6 +49,7 @@ export default function AdminDashboardScreen({
     onLogout,
     onViewOrder,
     onViewHistory,
+    onViewLedger,
 }: Props) {
     const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -181,7 +183,7 @@ export default function AdminDashboardScreen({
     };
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
             <View style={styles.topBar}>
                 <View>
@@ -229,6 +231,33 @@ export default function AdminDashboardScreen({
                             </Text>
                         </View>
                         <Text style={styles.historyActionArrow}>➔</Text>
+                    </View>
+                </TouchableOpacity>
+
+                {/* CASH LEDGER & BROTHER SETTLEMENT CARD */}
+                <TouchableOpacity
+                    style={styles.ledgerActionCard}
+                    onPress={onViewLedger}
+                    activeOpacity={0.88}
+                >
+                    <View style={styles.ledgerActionContent}>
+                        <View style={styles.ledgerIconCircle}>
+                            <Text style={styles.ledgerIconText}>💰</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <View style={styles.ledgerBadgeRow}>
+                                <Text style={styles.ledgerActionTitle}>
+                                    रोख हिशोब व ताळेबंद (Cash Ledger)
+                                </Text>
+                                <View style={styles.newBadge}>
+                                    <Text style={styles.newBadgeText}>खतावणी</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.ledgerActionSub}>
+                                अरिहंत बाजार आणि ॲडमिनमधील कॅश देवाणघेवाण व अंतिम बाकी हिशोब पहा
+                            </Text>
+                        </View>
+                        <Text style={styles.ledgerActionArrow}>➔</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -436,7 +465,7 @@ const styles = StyleSheet.create({
     topBar: {
         backgroundColor: "#FFFFFF",
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingVertical: 10,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
@@ -832,5 +861,66 @@ const styles = StyleSheet.create({
     },
     billTextPending: {
         color: "#D97706",
+    },
+    ledgerActionCard: {
+        backgroundColor: "#0F172A",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1.5,
+        borderColor: "#38BDF8",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    ledgerActionContent: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    ledgerIconCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "rgba(56, 189, 248, 0.15)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+    },
+    ledgerIconText: {
+        fontSize: 22,
+    },
+    ledgerBadgeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
+    ledgerActionTitle: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#FFFFFF",
+    },
+    newBadge: {
+        backgroundColor: "#16A34A",
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    newBadgeText: {
+        color: "#FFFFFF",
+        fontSize: 10,
+        fontWeight: "700",
+    },
+    ledgerActionSub: {
+        fontSize: 11,
+        color: "#94A3B8",
+        marginTop: 2,
+    },
+    ledgerActionArrow: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#38BDF8",
+        marginLeft: 8,
     },
 });

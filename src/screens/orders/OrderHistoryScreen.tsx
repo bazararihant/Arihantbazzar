@@ -116,6 +116,12 @@ export default function OrderHistoryScreen({
     const [repStartDate, setRepStartDate] = useState<string>("");
     const [repEndDate, setRepEndDate] = useState<string>("");
 
+    // Month-to-Month custom range picker (e.g. June 2025 to Feb 2026)
+    const [customStartMonth, setCustomStartMonth] = useState<number>(6); // June
+    const [customStartYear, setCustomStartYear] = useState<number>(now.getFullYear() - 1);
+    const [customEndMonth, setCustomEndMonth] = useState<number>(2); // Feb
+    const [customEndYear, setCustomEndYear] = useState<number>(now.getFullYear());
+
     const [reportData, setReportData] = useState<ExpenseReportResponse | null>(null);
     const [reportLoading, setReportLoading] = useState(false);
 
@@ -348,6 +354,40 @@ export default function OrderHistoryScreen({
         setRepEndDate(end);
     };
 
+    const handlePresetLastYear = () => {
+        const prevYear = new Date().getFullYear() - 1;
+        setRepStartDate(`${prevYear}-01-01`);
+        setRepEndDate(`${prevYear}-12-31`);
+    };
+
+    const handlePresetCurrentYear = () => {
+        const currYear = new Date().getFullYear();
+        setRepStartDate(`${currYear}-01-01`);
+        setRepEndDate(`${currYear}-12-31`);
+    };
+
+    const handlePresetFinancialYear = () => {
+        const d = new Date();
+        const currYear = d.getFullYear();
+        const isEarly = d.getMonth() < 3; // Jan-Mar
+        const fyStart = isEarly ? currYear - 1 : currYear;
+        const fyEnd = fyStart + 1;
+        setRepStartDate(`${fyStart}-04-01`);
+        setRepEndDate(`${fyEnd}-03-31`);
+    };
+
+    const handleApplyMonthRange = () => {
+        const sMonthStr = String(customStartMonth).padStart(2, "0");
+        const sDate = `${customStartYear}-${sMonthStr}-01`;
+
+        const lastDay = new Date(customEndYear, customEndMonth, 0).getDate();
+        const eMonthStr = String(customEndMonth).padStart(2, "0");
+        const eDate = `${customEndYear}-${eMonthStr}-${String(lastDay).padStart(2, "0")}`;
+
+        setRepStartDate(sDate);
+        setRepEndDate(eDate);
+    };
+
     // Label for current selected report period
     const reportPeriodLabel = useMemo(() => {
         if (reportMode === "month") {
@@ -367,7 +407,7 @@ export default function OrderHistoryScreen({
     }, [reportMode, reportMonth, reportYear, repStartDate, repEndDate]);
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={onBack}>
@@ -836,14 +876,8 @@ export default function OrderHistoryScreen({
                                     </View>
                                 </View>
 
-                                {/* Quick Range Presets */}
+                                {/* Quick Range Presets Row 1 */}
                                 <View style={styles.presetRow}>
-                                    <TouchableOpacity
-                                        style={styles.presetMiniBtn}
-                                        onPress={() => handlePresetReportRange(7)}
-                                    >
-                                        <Text style={styles.presetMiniText}>मागील ७ दिवस</Text>
-                                    </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.presetMiniBtn}
                                         onPress={() => handlePresetReportRange(30)}
@@ -861,6 +895,152 @@ export default function OrderHistoryScreen({
                                         }}
                                     >
                                         <Text style={styles.presetMiniText}>चालू महिना</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.presetMiniBtn}
+                                        onPress={() => handlePresetReportRange(180)}
+                                    >
+                                        <Text style={styles.presetMiniText}>मागील ६ महिने</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Quick Range Presets Row 2 (Year Presets) */}
+                                <View style={[styles.presetRow, { marginTop: 6 }]}>
+                                    <TouchableOpacity
+                                        style={[styles.presetMiniBtn, { backgroundColor: "#FEF3C7", borderColor: "#FCD34D" }]}
+                                        onPress={handlePresetLastYear}
+                                    >
+                                        <Text style={[styles.presetMiniText, { color: "#B45309" }]}>
+                                            📌 मागील वर्ष ({new Date().getFullYear() - 1})
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.presetMiniBtn, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}
+                                        onPress={handlePresetCurrentYear}
+                                    >
+                                        <Text style={[styles.presetMiniText, { color: "#1D4ED8" }]}>
+                                            📌 चालू वर्ष ({new Date().getFullYear()})
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.presetMiniBtn, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" }]}
+                                        onPress={handlePresetFinancialYear}
+                                    >
+                                        <Text style={[styles.presetMiniText, { color: "#15803D" }]}>
+                                            📊 आर्थिक वर्ष (FY)
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Month-to-Month Custom Picker (उदा. जून ते फेब्रुवारी) */}
+                                <View style={styles.monthRangeBox}>
+                                    <Text style={styles.monthRangeHeaderTitle}>
+                                        🗓️ महिना ते महिना झटपट निवडा (Month Range):
+                                    </Text>
+
+                                    <View style={styles.monthRangeColumnsRow}>
+                                        {/* From Month & Year */}
+                                        <View style={{ flex: 1, marginRight: 4 }}>
+                                            <Text style={styles.miniHeaderLbl}>सुरुवात महिना:</Text>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                                                {MONTHS_MR.map((m) => (
+                                                    <TouchableOpacity
+                                                        key={`s-${m.num}`}
+                                                        style={[
+                                                            styles.monthChip,
+                                                            customStartMonth === m.num && styles.monthChipActive,
+                                                        ]}
+                                                        onPress={() => setCustomStartMonth(m.num)}
+                                                    >
+                                                        <Text
+                                                            style={[
+                                                                styles.monthChipText,
+                                                                customStartMonth === m.num && styles.monthChipTextActive,
+                                                            ]}
+                                                        >
+                                                            {m.name}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                            <View style={{ flexDirection: "row", gap: 4 }}>
+                                                {[2024, 2025, 2026, 2027].map((yr) => (
+                                                    <TouchableOpacity
+                                                        key={`sy-${yr}`}
+                                                        style={[
+                                                            styles.yearChip,
+                                                            customStartYear === yr && styles.yearChipActive,
+                                                        ]}
+                                                        onPress={() => setCustomStartYear(yr)}
+                                                    >
+                                                        <Text
+                                                            style={[
+                                                                styles.yearChipText,
+                                                                customStartYear === yr && styles.yearChipTextActive,
+                                                            ]}
+                                                        >
+                                                            {yr}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+
+                                        {/* To Month & Year */}
+                                        <View style={{ flex: 1, marginLeft: 4 }}>
+                                            <Text style={styles.miniHeaderLbl}>शेवट महिना:</Text>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                                                {MONTHS_MR.map((m) => (
+                                                    <TouchableOpacity
+                                                        key={`e-${m.num}`}
+                                                        style={[
+                                                            styles.monthChip,
+                                                            customEndMonth === m.num && styles.monthChipActive,
+                                                        ]}
+                                                        onPress={() => setCustomEndMonth(m.num)}
+                                                    >
+                                                        <Text
+                                                            style={[
+                                                                styles.monthChipText,
+                                                                customEndMonth === m.num && styles.monthChipTextActive,
+                                                            ]}
+                                                        >
+                                                            {m.name}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                            <View style={{ flexDirection: "row", gap: 4 }}>
+                                                {[2024, 2025, 2026, 2027].map((yr) => (
+                                                    <TouchableOpacity
+                                                        key={`ey-${yr}`}
+                                                        style={[
+                                                            styles.yearChip,
+                                                            customEndYear === yr && styles.yearChipActive,
+                                                        ]}
+                                                        onPress={() => setCustomEndYear(yr)}
+                                                    >
+                                                        <Text
+                                                            style={[
+                                                                styles.yearChipText,
+                                                                customEndYear === yr && styles.yearChipTextActive,
+                                                            ]}
+                                                        >
+                                                            {yr}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <TouchableOpacity
+                                        style={styles.applyMonthRangeBtn}
+                                        onPress={handleApplyMonthRange}
+                                    >
+                                        <Text style={styles.applyMonthRangeBtnText}>
+                                            ✅ {MONTHS_MR.find((m) => m.num === customStartMonth)?.name} {customStartYear} ते {MONTHS_MR.find((m) => m.num === customEndMonth)?.name} {customEndYear} निवडा
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -1847,5 +2027,84 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "800",
         color: "#FFFFFF",
+    },
+    monthRangeBox: {
+        backgroundColor: "#F8FAFC",
+        borderRadius: 12,
+        padding: 12,
+        marginTop: 12,
+        borderWidth: 1.5,
+        borderColor: "#CBD5E1",
+    },
+    monthRangeHeaderTitle: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#0F172A",
+        marginBottom: 8,
+    },
+    monthRangeColumnsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    miniHeaderLbl: {
+        fontSize: 10,
+        fontWeight: "700",
+        color: "#475569",
+        textTransform: "uppercase",
+    },
+    monthChip: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#CBD5E1",
+        marginRight: 4,
+    },
+    monthChipActive: {
+        backgroundColor: "#0F172A",
+        borderColor: "#0F172A",
+    },
+    monthChipText: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "#475569",
+    },
+    monthChipTextActive: {
+        color: "#FFFFFF",
+        fontWeight: "700",
+    },
+    yearChip: {
+        flex: 1,
+        paddingVertical: 3,
+        borderRadius: 6,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#CBD5E1",
+        alignItems: "center",
+    },
+    yearChipActive: {
+        backgroundColor: "#2563EB",
+        borderColor: "#2563EB",
+    },
+    yearChipText: {
+        fontSize: 10,
+        fontWeight: "700",
+        color: "#475569",
+    },
+    yearChipTextActive: {
+        color: "#FFFFFF",
+    },
+    applyMonthRangeBtn: {
+        backgroundColor: "#16A34A",
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: "center",
+        marginTop: 10,
+    },
+    applyMonthRangeBtnText: {
+        color: "#FFFFFF",
+        fontSize: 12,
+        fontWeight: "700",
     },
 });

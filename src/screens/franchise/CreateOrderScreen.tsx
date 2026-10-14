@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
+import { ORDER_UNITS, formatUnitMarathi } from "../../utils/unitHelper";
 
 interface Props {
     onBack: () => void;
@@ -29,29 +30,21 @@ export interface OrderItemEntry {
 }
 
 const COMMON_SUGGESTIONS = [
-    { name: "साखर (Sugar)", unit: "kg" },
+    { name: "साखर (Sugar)", unit: "bag" },
+    { name: "तांदूळ (Rice)", unit: "bag" },
+    { name: "गहू पीठ (Atta)", unit: "bag" },
     { name: "खाद्यतेल (Cooking Oil)", unit: "litre" },
     { name: "तूर डाळ (Toor Dal)", unit: "kg" },
     { name: "चहा पावडर (Tea)", unit: "kg" },
-    { name: "तांदूळ (Rice)", unit: "kg" },
-    { name: "गहू पीठ (Atta)", unit: "kg" },
-    { name: "पोहे (Poha)", unit: "kg" },
-    { name: "शेंगदाणे (Peanuts)", unit: "kg" },
+    { name: "पोहे (Poha)", unit: "bag" },
+    { name: "शेंगदाणे (Peanuts)", unit: "bag" },
     { name: "बिस्किट बॉक्स (Biscuits)", unit: "box" },
     { name: "साबण (Soap)", unit: "packet" },
     { name: "मीठ (Salt)", unit: "packet" },
     { name: "रवा (Rava)", unit: "kg" },
 ];
 
-const UNITS = [
-    { label: "किलो (kg)", value: "kg" },
-    { label: "लिटर (litre)", value: "litre" },
-    { label: "पाकीट (packet)", value: "packet" },
-    { label: "बॉक्स (box)", value: "box" },
-    { label: "नग (pcs)", value: "pcs" },
-    { label: "गोणी / पोते (bag)", value: "bag" },
-    { label: "ग्रॅम (gram)", value: "gram" },
-];
+const UNITS = ORDER_UNITS;
 
 export default function CreateOrderScreen({ onBack, onOrderCreated }: Props) {
     const insets = useSafeAreaInsets();
@@ -228,7 +221,7 @@ export default function CreateOrderScreen({ onBack, onOrderCreated }: Props) {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -392,7 +385,7 @@ export default function CreateOrderScreen({ onBack, onOrderCreated }: Props) {
 
                                             <View style={styles.qtyDisplay}>
                                                 <Text style={styles.qtyDisplayText}>
-                                                    {item.quantity} {item.unit}
+                                                    {item.quantity} {formatUnitMarathi(item.unit)}
                                                 </Text>
                                             </View>
 

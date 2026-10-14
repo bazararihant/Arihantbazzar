@@ -63,7 +63,22 @@ export const initializeDatabase = async () => {
       ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_checked BOOLEAN DEFAULT FALSE;
     `);
 
-    // 5. Create Keep Alive Ping Table (Prevents Render and Supabase from sleeping)
+    // 5. Create Cash Transactions (Ledger / Khata) Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cash_transactions (
+        id SERIAL PRIMARY KEY,
+        franchise_id INT NOT NULL REFERENCES franchises(id) ON DELETE CASCADE,
+        recorded_by_user_id INT NOT NULL REFERENCES users(id),
+        transaction_type VARCHAR(50) NOT NULL, -- 'branch_to_admin' or 'admin_to_branch'
+        amount NUMERIC(12, 2) NOT NULL,
+        payment_mode VARCHAR(50) NOT NULL DEFAULT 'cash', -- 'cash', 'upi', 'bank'
+        transaction_date DATE DEFAULT CURRENT_DATE,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Create Keep Alive Ping Table (Prevents Render and Supabase from sleeping)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS keep_alive_pings (
         id INT PRIMARY KEY DEFAULT 1,

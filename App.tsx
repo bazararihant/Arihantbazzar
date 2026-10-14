@@ -7,6 +7,7 @@ import CreateOrderScreen from "./src/screens/franchise/CreateOrderScreen";
 import OrderDetailScreen from "./src/screens/orders/OrderDetailScreen";
 import OrderHistoryScreen from "./src/screens/orders/OrderHistoryScreen";
 import AdminDashboardScreen from "./src/screens/admin/AdminDashboardScreen";
+import CashLedgerScreen from "./src/screens/ledger/CashLedgerScreen";
 import { getUser, UserSession } from "./src/services/storage";
 
 type ScreenType =
@@ -15,7 +16,8 @@ type ScreenType =
     | "create_order"
     | "order_detail"
     | "admin_dashboard"
-    | "order_history";
+    | "order_history"
+    | "cash_ledger";
 
 export default function App() {
     const [user, setUser] = useState<UserSession | null>(null);
@@ -91,6 +93,18 @@ export default function App() {
         }
     };
 
+    const handleViewLedger = () => {
+        setCurrentScreen("cash_ledger");
+    };
+
+    const handleBackFromLedger = () => {
+        if (user?.role === "admin") {
+            setCurrentScreen("admin_dashboard");
+        } else {
+            setCurrentScreen("branch_dashboard");
+        }
+    };
+
     const renderContent = () => {
         if (initializing) {
             return (
@@ -148,7 +162,17 @@ export default function App() {
             );
         }
 
-        // 5. Admin Dashboard (Strictly Today's Orders Details)
+        // 5. Cash Ledger Screen (Brother Cash Tracking & Settlement)
+        if (currentScreen === "cash_ledger") {
+            return (
+                <CashLedgerScreen
+                    currentUser={user}
+                    onBack={handleBackFromLedger}
+                />
+            );
+        }
+
+        // 6. Admin Dashboard (Strictly Today's Orders Details)
         if (currentScreen === "admin_dashboard" && user.role === "admin") {
             return (
                 <AdminDashboardScreen
@@ -156,11 +180,12 @@ export default function App() {
                     onLogout={handleLogout}
                     onViewOrder={handleViewOrder}
                     onViewHistory={handleViewHistory}
+                    onViewLedger={handleViewLedger}
                 />
             );
         }
 
-        // 6. Default: Branch Dashboard
+        // 7. Default: Branch Dashboard
         return (
             <BranchDashboardScreen
                 user={user}
@@ -168,6 +193,7 @@ export default function App() {
                 onCreateOrder={() => setCurrentScreen("create_order")}
                 onViewOrder={handleViewOrder}
                 onViewHistory={handleViewHistory}
+                onViewLedger={handleViewLedger}
             />
         );
     };
