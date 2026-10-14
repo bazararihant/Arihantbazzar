@@ -6,15 +6,15 @@ import { AuthRequest } from "../middleware/authMiddleware";
  * Helper to determine active franchise ID
  */
 const getActiveFranchiseId = async (req: AuthRequest): Promise<number | null> => {
-    const user = req.user!;
-    if (user.role === "franchise" && user.franchise_id) {
+    const user = req.user;
+    if (user && user.role === "franchise" && user.franchise_id) {
         return user.franchise_id;
     }
 
-    if (req.query.franchise_id) {
+    if (req.query && req.query.franchise_id) {
         return Number(req.query.franchise_id);
     }
-    if (req.body.franchise_id) {
+    if (req.body && req.body.franchise_id) {
         return Number(req.body.franchise_id);
     }
 

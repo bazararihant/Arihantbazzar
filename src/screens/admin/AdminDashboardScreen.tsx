@@ -247,7 +247,7 @@ export default function AdminDashboardScreen({
                         <View style={{ flex: 1 }}>
                             <View style={styles.ledgerBadgeRow}>
                                 <Text style={styles.ledgerActionTitle}>
-                                    रोख हिशोब व ताळेबंद (Cash Ledger)
+                                    रोख जमा-खर्च हिशोब (Cash Ledger)
                                 </Text>
                                 <View style={styles.newBadge}>
                                     <Text style={styles.newBadgeText}>खतावणी</Text>

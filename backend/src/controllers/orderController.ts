@@ -580,11 +580,11 @@ export const getExpenseReport = async (req: AuthRequest, res: Response) => {
         const conditions: string[] = [];
         const params: any[] = [];
 
-        const user = req.user!;
-        if (user.role === "franchise" && user.franchise_id) {
+        const user = req.user;
+        if (user && user.role === "franchise" && user.franchise_id) {
             params.push(user.franchise_id);
             conditions.push(`o.franchise_id = $${params.length}`);
-        } else if (req.query.franchise_id) {
+        } else if (req.query && req.query.franchise_id) {
             params.push(Number(req.query.franchise_id));
             conditions.push(`o.franchise_id = $${params.length}`);
         }
@@ -648,9 +648,9 @@ export const getExpenseReport = async (req: AuthRequest, res: Response) => {
             daily: dailyRes.rows,
             topItems: itemsRes.rows,
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Get expense report error:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: error?.message || "Internal server error" });
     }
 };
 

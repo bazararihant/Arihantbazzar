@@ -202,10 +202,10 @@ export default function BranchDashboardScreen({
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.ledgerBtnTitle}>
-                                रोख हिशोब व ताळेबंद (Cash Ledger)
+                                रोख जमा-खर्च हिशोब (Cash Ledger)
                             </Text>
                             <Text style={styles.ledgerBtnSubtitle}>
-                                ॲडमिनसोबतचा पैशांचा हिशोब व बाकी ताळेबंद पहा
+                                ॲडमिनसोबतचा पैशांची देवाणघेवाण व बाकी हिशोब पहा
                             </Text>
                         </View>
                         <Text style={styles.ledgerBtnArrow}>➔</Text>

@@ -199,7 +199,7 @@ export default function CashLedgerScreen({ currentUser, onBack }: Props) {
                 </TouchableOpacity>
                 <View style={{ flex: 1, marginHorizontal: 8 }}>
                     <Text style={styles.headerTitle} numberOfLines={1}>
-                        💰 रोख हिशोब व ताळेबंद
+                        💰 रोख जमा-खर्च हिशोब
                     </Text>
                     <Text style={styles.headerSubtitle} numberOfLines={1}>
                         अरिहंत बाजार ↔ मुख्य ॲडमिन
@@ -236,7 +236,7 @@ export default function CashLedgerScreen({ currentUser, onBack }: Props) {
                         ]}
                     >
                         <View style={styles.settlementHeaderRow}>
-                            <Text style={styles.settlementTag}>⚖️ अंतिम ताळेबंद स्थिती (Settlement)</Text>
+                            <Text style={styles.settlementTag}>⚖️ अंतिम बाकी हिशोब (Settlement)</Text>
                             <View
                                 style={[
                                     styles.settlementPill,
