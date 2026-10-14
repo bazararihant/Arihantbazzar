@@ -1,4 +1,6 @@
 import { Response } from "express";
+import fs from "fs";
+import path from "path";
 import { pool } from "../config/db";
 import { AuthRequest } from "../middleware/authMiddleware";
 
@@ -97,7 +99,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
 export const getOrders = async (req: AuthRequest, res: Response) => {
     try {
         const user = req.user!;
-        const { franchise_id, status } = req.query;
+        const { franchise_id, status, today, date, start_date, end_date } = req.query;
 
         let query = `
             SELECT o.id, o.franchise_id, o.order_date, o.status, o.notes,
@@ -127,6 +129,23 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
         if (status) {
             params.push(status);
             conditions.push(`o.status = $${params.length}`);
+        }
+
+        // Today filter
+        if (today === "true" || String(today) === "true" || date === "today") {
+            conditions.push(`DATE(o.created_at) = CURRENT_DATE`);
+        } else if (date) {
+            params.push(date);
+            conditions.push(`DATE(o.created_at) = $${params.length}`);
+        } else {
+            if (start_date) {
+                params.push(start_date);
+                conditions.push(`DATE(o.created_at) >= $${params.length}`);
+            }
+            if (end_date) {
+                params.push(end_date);
+                conditions.push(`DATE(o.created_at) <= $${params.length}`);
+            }
         }
 
         if (conditions.length > 0) {
@@ -173,7 +192,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         }
 
         const itemsRes = await pool.query(
-            `SELECT id, item_name, quantity, unit, notes
+            `SELECT id, item_name, quantity, unit, notes, COALESCE(is_checked, false) as is_checked
              FROM order_items
              WHERE order_id = $1
              ORDER BY id ASC`,
@@ -196,15 +215,54 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 export const uploadBill = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const { bill_amount } = req.body;
+        const { bill_amount, image_base64 } = req.body;
         const file = req.file;
 
-        if (!file) {
-            return res.status(400).json({ message: "Bill image file is required" });
+        if (!file && !image_base64) {
+            return res.status(400).json({ message: "Bill image file or image_base64 is required" });
         }
 
-        // Generate accessible image URL
-        const billImageUrl = `/uploads/${file.filename}`;
+        let billImageUrl = "";
+
+        if (file) {
+            const ext = path.extname(file.originalname) || ".jpg";
+            const filename = `bill-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+            let savedToDisk = false;
+
+            // Attempt to write physical file to uploads/ folder (for local server/storage)
+            try {
+                const uploadsDir = path.join(__dirname, "../../uploads");
+                if (!fs.existsSync(uploadsDir)) {
+                    fs.mkdirSync(uploadsDir, { recursive: true });
+                }
+                fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
+                savedToDisk = true;
+            } catch (diskErr) {
+                console.warn("[Upload] Could not write to disk (likely serverless/Vercel):", diskErr);
+            }
+
+            // If running on a persistent server, serve via /uploads/
+            // Otherwise use Data URL so Vercel / Cloud never loses the image
+            const mimeType = file.mimetype || "image/jpeg";
+            billImageUrl = savedToDisk
+                ? `/uploads/${filename}`
+                : `data:${mimeType};base64,${file.buffer.toString("base64")}`;
+        } else if (image_base64) {
+            billImageUrl = image_base64;
+
+            // Try to write to disk if possible
+            try {
+                const uploadsDir = path.join(__dirname, "../../uploads");
+                if (!fs.existsSync(uploadsDir)) {
+                    fs.mkdirSync(uploadsDir, { recursive: true });
+                }
+                const filename = `bill-${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
+                const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
+                fs.writeFileSync(path.join(uploadsDir, filename), Buffer.from(base64Data, "base64"));
+            } catch (diskErr) {
+                // Ignore on serverless
+            }
+        }
 
         const result = await pool.query(
             `UPDATE material_orders
@@ -310,3 +368,280 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// 8. Toggle / Set Item Checked status (for Admin and Branch Checklist)
+export const toggleItemCheck = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id, itemId } = req.params;
+        const { is_checked } = req.body;
+
+        const result = await pool.query(
+            `UPDATE order_items 
+             SET is_checked = COALESCE($1, NOT COALESCE(is_checked, false))
+             WHERE id = $2 AND order_id = $3
+             RETURNING id, order_id, item_name, quantity, unit, notes, is_checked`,
+            [typeof is_checked === "boolean" ? is_checked : null, itemId, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Item not found in this order" });
+        }
+
+        return res.json({
+            message: "Item check status updated",
+            item: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Toggle item check error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 9. Update an order item (Admin or Order Owner)
+export const updateOrderItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id, itemId } = req.params;
+        const { item_name, quantity, unit, notes } = req.body;
+
+        if (quantity !== undefined && Number(quantity) <= 0) {
+            return res.status(400).json({ message: "Quantity must be greater than 0" });
+        }
+
+        const result = await pool.query(
+            `UPDATE order_items
+             SET item_name = COALESCE($1, item_name),
+                 quantity = COALESCE($2, quantity),
+                 unit = COALESCE($3, unit),
+                 notes = COALESCE($4, notes)
+             WHERE id = $5 AND order_id = $6
+             RETURNING id, order_id, item_name, quantity, unit, notes, is_checked`,
+            [
+                item_name ? item_name.trim() : null,
+                quantity !== undefined ? Number(quantity) : null,
+                unit ? unit.trim().toLowerCase() : null,
+                notes !== undefined ? notes : null,
+                itemId,
+                id,
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Item not found" });
+        }
+
+        return res.json({
+            message: "Item updated successfully",
+            item: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Update order item error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 10. Add an item to an existing order
+export const addOrderItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { item_name, quantity, unit, notes } = req.body;
+
+        if (!item_name || !item_name.trim() || !quantity || Number(quantity) <= 0) {
+            return res.status(400).json({
+                message: "Valid item_name and quantity greater than 0 are required",
+            });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO order_items (order_id, item_name, quantity, unit, notes, is_checked)
+             VALUES ($1, $2, $3, $4, $5, false)
+             RETURNING id, order_id, item_name, quantity, unit, notes, is_checked`,
+            [
+                id,
+                item_name.trim(),
+                Number(quantity),
+                unit ? unit.trim().toLowerCase() : "kg",
+                notes || null,
+            ]
+        );
+
+        return res.status(201).json({
+            message: "Item added to order successfully",
+            item: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Add order item error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 11. Delete an item from an order
+export const deleteOrderItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id, itemId } = req.params;
+
+        const countRes = await pool.query(
+            "SELECT COUNT(*)::int as count FROM order_items WHERE order_id = $1",
+            [id]
+        );
+        if (countRes.rows[0].count <= 1) {
+            await pool.query("DELETE FROM material_orders WHERE id = $1", [id]);
+            return res.json({
+                message: "Last item removed and order deleted successfully",
+                orderDeleted: true,
+            });
+        }
+
+        const result = await pool.query(
+            "DELETE FROM order_items WHERE id = $1 AND order_id = $2 RETURNING id",
+            [itemId, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Item not found" });
+        }
+
+        return res.json({ message: "Item deleted successfully" });
+    } catch (error) {
+        console.error("Delete order item error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 12. Update order general details (e.g. notes)
+export const updateOrder = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { notes, status, bill_amount } = req.body;
+
+        const result = await pool.query(
+            `UPDATE material_orders
+             SET notes = COALESCE($1, notes),
+                 status = COALESCE($2, status),
+                 bill_amount = COALESCE($3, bill_amount),
+                 updated_at = NOW()
+             WHERE id = $4
+             RETURNING id, franchise_id, status, notes, bill_amount, updated_at`,
+            [
+                notes !== undefined ? notes : null,
+                status || null,
+                bill_amount !== undefined && bill_amount !== "" ? Number(bill_amount) : null,
+                id
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        return res.json({
+            message: "Order updated successfully",
+            order: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Update order error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 13. Delete an order
+export const deleteOrder = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query(
+            "DELETE FROM material_orders WHERE id = $1 RETURNING id",
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        return res.json({ message: "Order deleted successfully" });
+    } catch (error) {
+        console.error("Delete order error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// 14. Monthly & Custom Date Range Expense Report
+export const getExpenseReport = async (req: AuthRequest, res: Response) => {
+    try {
+        const { start_date, end_date, month, year } = req.query;
+        let query = `
+            SELECT 
+                COUNT(o.id)::int as total_orders,
+                COALESCE(SUM(o.bill_amount), 0)::numeric as total_expense,
+                COALESCE(ROUND(AVG(NULLIF(o.bill_amount, 0)), 2), 0)::numeric as avg_expense,
+                COUNT(CASE WHEN o.status = 'delivered' THEN 1 END)::int as delivered_orders,
+                COUNT(CASE WHEN o.status = 'pending' THEN 1 END)::int as pending_orders,
+                COUNT(CASE WHEN o.bill_image_url IS NOT NULL OR o.bill_amount > 0 THEN 1 END)::int as billed_orders
+            FROM material_orders o
+        `;
+        const conditions: string[] = [];
+        const params: any[] = [];
+
+        if (start_date) {
+            params.push(start_date);
+            conditions.push(`DATE(o.created_at) >= $${params.length}`);
+        }
+        if (end_date) {
+            params.push(end_date);
+            conditions.push(`DATE(o.created_at) <= $${params.length}`);
+        }
+        if (month && year) {
+            params.push(Number(month));
+            conditions.push(`EXTRACT(MONTH FROM o.created_at) = $${params.length}`);
+            params.push(Number(year));
+            conditions.push(`EXTRACT(YEAR FROM o.created_at) = $${params.length}`);
+        } else if (year) {
+            params.push(Number(year));
+            conditions.push(`EXTRACT(YEAR FROM o.created_at) = $${params.length}`);
+        }
+
+        if (conditions.length > 0) {
+            query += " WHERE " + conditions.join(" AND ");
+        }
+
+        const summaryRes = await pool.query(query, params);
+
+        // Daily breakdown
+        let dailyQuery = `
+            SELECT 
+                DATE(o.created_at)::text as date,
+                COUNT(o.id)::int as orders_count,
+                COALESCE(SUM(o.bill_amount), 0)::numeric as daily_expense
+            FROM material_orders o
+        `;
+        if (conditions.length > 0) {
+            dailyQuery += " WHERE " + conditions.join(" AND ");
+        }
+        dailyQuery += " GROUP BY DATE(o.created_at) ORDER BY DATE(o.created_at) DESC";
+        const dailyRes = await pool.query(dailyQuery, params);
+
+        // Top items breakdown
+        let itemsQuery = `
+            SELECT 
+                oi.item_name,
+                oi.unit,
+                SUM(oi.quantity)::numeric as total_quantity,
+                COUNT(DISTINCT oi.order_id)::int as orders_count
+            FROM order_items oi
+            JOIN material_orders o ON o.id = oi.order_id
+        `;
+        if (conditions.length > 0) {
+            itemsQuery += " WHERE " + conditions.join(" AND ");
+        }
+        itemsQuery += " GROUP BY oi.item_name, oi.unit ORDER BY total_quantity DESC LIMIT 10";
+        const itemsRes = await pool.query(itemsQuery, params);
+
+        return res.json({
+            summary: summaryRes.rows[0],
+            daily: dailyRes.rows,
+            topItems: itemsRes.rows,
+        });
+    } catch (error) {
+        console.error("Get expense report error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+

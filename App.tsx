@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, StatusBar } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoginScreen from "./src/screens/auth/LoginScreen";
 import BranchDashboardScreen from "./src/screens/franchise/BranchDashboardScreen";
 import CreateOrderScreen from "./src/screens/franchise/CreateOrderScreen";
 import OrderDetailScreen from "./src/screens/orders/OrderDetailScreen";
+import OrderHistoryScreen from "./src/screens/orders/OrderHistoryScreen";
 import AdminDashboardScreen from "./src/screens/admin/AdminDashboardScreen";
 import { getUser, UserSession } from "./src/services/storage";
 
@@ -12,12 +14,14 @@ type ScreenType =
     | "branch_dashboard"
     | "create_order"
     | "order_detail"
-    | "admin_dashboard";
+    | "admin_dashboard"
+    | "order_history";
 
 export default function App() {
     const [user, setUser] = useState<UserSession | null>(null);
     const [currentScreen, setCurrentScreen] = useState<ScreenType>("login");
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [historyTab, setHistoryTab] = useState<"orders" | "report">("orders");
     const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
@@ -74,68 +78,110 @@ export default function App() {
         }
     };
 
-    if (initializing) {
-        return (
-            <View
-                style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "#F8FAFC",
-                }}
-            >
-                <ActivityIndicator size="large" color="#16A34A" />
-            </View>
-        );
-    }
+    const handleViewHistory = (tab: "orders" | "report" = "orders") => {
+        setHistoryTab(tab);
+        setCurrentScreen("order_history");
+    };
 
-    // 1. Login Screen
-    if (currentScreen === "login" || !user) {
-        return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
-    }
+    const handleBackFromHistory = () => {
+        if (user?.role === "admin") {
+            setCurrentScreen("admin_dashboard");
+        } else {
+            setCurrentScreen("branch_dashboard");
+        }
+    };
 
-    // 2. Create Order Screen (Franchise)
-    if (currentScreen === "create_order") {
-        return (
-            <CreateOrderScreen
-                onBack={() => setCurrentScreen("branch_dashboard")}
-                onOrderCreated={(newOrderId) => {
-                    setSelectedOrderId(newOrderId);
-                    setCurrentScreen("order_detail");
-                }}
-            />
-        );
-    }
+    const renderContent = () => {
+        if (initializing) {
+            return (
+                <View
+                    style={{
+                        flex: 1,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        backgroundColor: "#F8FAFC",
+                    }}
+                >
+                    <ActivityIndicator size="large" color="#16A34A" />
+                </View>
+            );
+        }
 
-    // 3. Order Detail Screen (View items, upload bill photo, admin approve)
-    if (currentScreen === "order_detail" && selectedOrderId) {
-        return (
-            <OrderDetailScreen
-                orderId={selectedOrderId}
-                currentUser={user}
-                onBack={handleBackFromDetail}
-            />
-        );
-    }
+        // 1. Login Screen
+        if (currentScreen === "login" || !user) {
+            return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+        }
 
-    // 4. Admin Dashboard
-    if (currentScreen === "admin_dashboard" && user.role === "admin") {
+        // 2. Create Order Screen (Franchise)
+        if (currentScreen === "create_order") {
+            return (
+                <CreateOrderScreen
+                    onBack={() => setCurrentScreen("branch_dashboard")}
+                    onOrderCreated={(newOrderId) => {
+                        setSelectedOrderId(newOrderId);
+                        setCurrentScreen("order_detail");
+                    }}
+                />
+            );
+        }
+
+        // 3. Order Detail Screen (View items, upload bill photo, admin approve)
+        if (currentScreen === "order_detail" && selectedOrderId) {
+            return (
+                <OrderDetailScreen
+                    orderId={selectedOrderId}
+                    currentUser={user}
+                    onBack={handleBackFromDetail}
+                />
+            );
+        }
+
+        // 4. Order History Screen (All & Date-wise customize history & Monthly expense report)
+        if (currentScreen === "order_history") {
+            return (
+                <OrderHistoryScreen
+                    user={user}
+                    onBack={handleBackFromHistory}
+                    onViewOrder={handleViewOrder}
+                    initialTab={historyTab}
+                />
+            );
+        }
+
+        // 5. Admin Dashboard (Strictly Today's Orders Details)
+        if (currentScreen === "admin_dashboard" && user.role === "admin") {
+            return (
+                <AdminDashboardScreen
+                    user={user}
+                    onLogout={handleLogout}
+                    onViewOrder={handleViewOrder}
+                    onViewHistory={handleViewHistory}
+                />
+            );
+        }
+
+        // 6. Default: Branch Dashboard
         return (
-            <AdminDashboardScreen
+            <BranchDashboardScreen
                 user={user}
                 onLogout={handleLogout}
+                onCreateOrder={() => setCurrentScreen("create_order")}
                 onViewOrder={handleViewOrder}
+                onViewHistory={handleViewHistory}
             />
         );
-    }
+    };
 
-    // 5. Default: Branch Dashboard
+    useEffect(() => {
+        StatusBar.setBarStyle("dark-content");
+    }, []);
+
     return (
-        <BranchDashboardScreen
-            user={user}
-            onLogout={handleLogout}
-            onCreateOrder={() => setCurrentScreen("create_order")}
-            onViewOrder={handleViewOrder}
-        />
+        <SafeAreaProvider>
+            <StatusBar barStyle="dark-content" />
+            <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+                {renderContent()}
+            </View>
+        </SafeAreaProvider>
     );
 }

@@ -9,19 +9,17 @@ import {
     updateOrderStatus,
     getFranchises,
     getDashboardStats,
+    toggleItemCheck,
+    updateOrderItem,
+    addOrderItem,
+    deleteOrderItem,
+    updateOrder,
+    deleteOrder,
+    getExpenseReport,
 } from "../controllers/orderController";
 import { authenticateToken } from "../middleware/authMiddleware";
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, "../../uploads"));
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname) || ".jpg";
-        cb(null, "bill-" + uniqueSuffix + ext);
-    },
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
@@ -35,10 +33,19 @@ router.use(authenticateToken);
 
 router.get("/franchises", getFranchises);
 router.get("/dashboard/stats", getDashboardStats);
+router.get("/reports/expense", getExpenseReport);
 router.post("/", createOrder);
 router.get("/", getOrders);
 router.get("/:id", getOrderById);
+router.put("/:id", updateOrder);
+router.delete("/:id", deleteOrder);
 router.post("/:id/upload-bill", upload.single("bill"), uploadBill);
 router.patch("/:id/status", updateOrderStatus);
+
+// Items sub-routes
+router.post("/:id/items", addOrderItem);
+router.patch("/:id/items/:itemId/check", toggleItemCheck);
+router.put("/:id/items/:itemId", updateOrderItem);
+router.delete("/:id/items/:itemId", deleteOrderItem);
 
 export default router;

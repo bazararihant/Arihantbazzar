@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-    SafeAreaView,
     View,
     Text,
     StyleSheet,
@@ -10,6 +9,7 @@ import {
     ActivityIndicator,
     Alert,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
 import { clearAuthData, UserSession } from "../../services/storage";
 
@@ -18,6 +18,7 @@ interface Props {
     onLogout: () => void;
     onCreateOrder: () => void;
     onViewOrder: (orderId: number) => void;
+    onViewHistory?: () => void;
 }
 
 interface OrderItem {
@@ -39,10 +40,13 @@ export default function BranchDashboardScreen({
     onLogout,
     onCreateOrder,
     onViewOrder,
+    onViewHistory,
 }: Props) {
+    const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<OrderItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState<"active" | "history">("active");
 
     const loadOrders = useCallback(async () => {
         try {
@@ -89,6 +93,16 @@ export default function BranchDashboardScreen({
     const dispatchedCount = orders.filter((o) => o.status === "dispatched").length;
     const deliveredCount = orders.filter((o) => o.status === "delivered").length;
 
+    // Filter Active vs History
+    const activeOrders = orders.filter(
+        (o) => o.status === "pending" || o.status === "approved" || o.status === "dispatched"
+    );
+    const historyOrders = orders.filter(
+        (o) => o.status === "delivered" || o.status === "rejected"
+    );
+
+    const displayedOrders = activeTab === "active" ? activeOrders : historyOrders;
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "pending":
@@ -107,30 +121,52 @@ export default function BranchDashboardScreen({
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: 0 }]} edges={["top"]}>
             {/* Top Bar */}
             <View style={styles.topBar}>
                 <View style={styles.branchHeader}>
-                    <Text style={styles.branchBadge}>
-                        {user.franchise_code || "BRANCH"}
-                    </Text>
+                    <View style={styles.branchBadgeRow}>
+                        <Text style={styles.branchBadge}>
+                            {user.franchise_code || "BHILWADI"}
+                        </Text>
+                        <Text style={styles.branchLocText}>📍 भिलवडी, सांगली</Text>
+                    </View>
                     <Text style={styles.branchTitle}>
-                        {user.franchise_name || user.name}
+                        {user.franchise_name || "अरिहंत बाजार (भिलवडी, सांगली)"}
                     </Text>
                     <Text style={styles.userRole}>शाखा व्यवस्थापक (Branch Manager)</Text>
                 </View>
-                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                    <Text style={styles.logoutText}>लॉगआउट 🚪</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {onViewHistory && (
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: "#EFF6FF",
+                                paddingHorizontal: 10,
+                                paddingVertical: 7,
+                                borderRadius: 8,
+                                marginRight: 6,
+                                borderWidth: 1,
+                                borderColor: "#BFDBFE",
+                            }}
+                            onPress={onViewHistory}
+                        >
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: "#2563EB" }}>📜 इतिहास</Text>
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                        <Text style={styles.logoutText}>लॉगआउट 🚪</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
+                showsVerticalScrollIndicator={false}
             >
-                {/* Big Action Button */}
+                {/* Big Action Button to Create New Order */}
                 <TouchableOpacity
                     style={styles.createOrderBtn}
                     onPress={onCreateOrder}
@@ -173,9 +209,34 @@ export default function BranchDashboardScreen({
                     </View>
                 </View>
 
-                {/* Orders List Section */}
+                {/* TAB SELECTOR: ACTIVE ORDERS VS ORDER HISTORY */}
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === "active" && styles.tabButtonActive]}
+                        onPress={() => setActiveTab("active")}
+                    >
+                        <Text style={[styles.tabButtonText, activeTab === "active" && styles.tabButtonTextActive]}>
+                            📦 चालू ऑर्डर्स ({activeOrders.length})
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === "history" && styles.tabButtonActive]}
+                        onPress={() => setActiveTab("history")}
+                    >
+                        <Text style={[styles.tabButtonText, activeTab === "history" && styles.tabButtonTextActive]}>
+                            📜 ऑर्डर इतिहास ({historyOrders.length})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* List Header */}
                 <View style={styles.listHeaderRow}>
-                    <Text style={styles.sectionHeader}>मागवलेल्या ऑर्डर्सची यादी</Text>
+                    <Text style={styles.listTitle}>
+                        {activeTab === "active"
+                            ? "सध्या प्रक्रियेत असलेल्या ऑर्डर्स"
+                            : "पूर्ण झालेला इतिहास (Order History)"}
+                    </Text>
                     <TouchableOpacity onPress={onRefresh}>
                         <Text style={styles.refreshLink}>🔄 रिफ्रेश करा</Text>
                     </TouchableOpacity>
@@ -187,16 +248,22 @@ export default function BranchDashboardScreen({
                         color="#16A34A"
                         style={{ marginVertical: 30 }}
                     />
-                ) : orders.length === 0 ? (
+                ) : displayedOrders.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>📦</Text>
-                        <Text style={styles.emptyTitle}>अद्याप कोणतीही ऑर्डर नाही</Text>
+                        <Text style={styles.emptyTitle}>
+                            {activeTab === "active"
+                                ? "कोणतीही चालू ऑर्डर नाही"
+                                : "अद्याप कोणताही ऑर्डर इतिहास नाही"}
+                        </Text>
                         <Text style={styles.emptySubtitle}>
-                            वर दिलेल्या बटणावर क्लिक करून आजच्या सामानाची पहिली लिस्ट पाठवा.
+                            {activeTab === "active"
+                                ? "वर दिलेल्या 'नवीन सामानाची लिस्ट पाठवा' बटणावर क्लिक करून ऑर्डर नोंदवा."
+                                : "पूर्ण झालेल्या ऑर्डर्स येथे इतिहास स्वरूपात दिसतील."}
                         </Text>
                     </View>
                 ) : (
-                    orders.map((item) => {
+                    displayedOrders.map((item) => {
                         const badge = getStatusBadge(item.status);
                         const hasBill = !!item.bill_image_url;
 
@@ -288,9 +355,8 @@ const styles = StyleSheet.create({
     },
     topBar: {
         backgroundColor: "#FFFFFF",
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
@@ -300,51 +366,60 @@ const styles = StyleSheet.create({
     branchHeader: {
         flex: 1,
     },
+    branchBadgeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 2,
+    },
     branchBadge: {
-        fontSize: 11,
-        fontWeight: "800",
-        color: "#16A34A",
         backgroundColor: "#DCFCE7",
-        alignSelf: "flex-start",
-        paddingHorizontal: 8,
+        color: "#16A34A",
+        fontSize: 10,
+        fontWeight: "800",
+        paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 6,
-        marginBottom: 4,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    branchLocText: {
+        fontSize: 11,
+        color: "#64748B",
+        fontWeight: "600",
     },
     branchTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "800",
         color: "#0F172A",
     },
     userRole: {
-        fontSize: 12,
+        fontSize: 11,
         color: "#64748B",
+        marginTop: 1,
     },
     logoutBtn: {
         backgroundColor: "#FEE2E2",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
         borderRadius: 8,
     },
     logoutText: {
-        color: "#DC2626",
-        fontWeight: "700",
         fontSize: 12,
+        fontWeight: "700",
+        color: "#DC2626",
     },
     scrollContent: {
-        paddingHorizontal: 18,
-        paddingTop: 16,
-        paddingBottom: 35,
+        padding: 14,
     },
     createOrderBtn: {
         backgroundColor: "#16A34A",
-        borderRadius: 16,
+        borderRadius: 14,
         padding: 16,
-        marginBottom: 20,
-        elevation: 3,
+        marginBottom: 16,
         shadowColor: "#16A34A",
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
+        elevation: 4,
     },
     createBtnContent: {
         flexDirection: "row",
@@ -354,15 +429,16 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "rgba(255, 255, 255, 0.25)",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 14,
+        marginRight: 12,
     },
     plusIcon: {
         color: "#FFFFFF",
-        fontSize: 24,
-        fontWeight: "900",
+        fontSize: 26,
+        fontWeight: "700",
+        marginTop: -2,
     },
     createBtnTitle: {
         color: "#FFFFFF",
@@ -370,38 +446,37 @@ const styles = StyleSheet.create({
         fontWeight: "800",
     },
     createBtnSubtitle: {
-        color: "#DCFCE7",
-        fontSize: 12,
+        color: "rgba(255, 255, 255, 0.85)",
+        fontSize: 11,
         marginTop: 2,
     },
     createBtnArrow: {
         color: "#FFFFFF",
         fontSize: 20,
         fontWeight: "700",
-        marginLeft: 10,
+        marginLeft: 8,
     },
     sectionHeader: {
         fontSize: 15,
         fontWeight: "800",
         color: "#1E293B",
-        marginBottom: 12,
+        marginBottom: 10,
     },
     statsGrid: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: 22,
-        gap: 8,
+        marginBottom: 16,
     },
     statBox: {
         flex: 1,
         backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 8,
-        alignItems: "center",
+        borderRadius: 10,
+        padding: 10,
+        marginHorizontal: 3,
+        borderLeftWidth: 3.5,
         borderWidth: 1,
         borderColor: "#E2E8F0",
-        borderLeftWidth: 4,
+        alignItems: "center",
     },
     statNumber: {
         fontSize: 18,
@@ -412,51 +487,91 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: "#64748B",
         fontWeight: "600",
-        marginTop: 4,
+        marginTop: 2,
+    },
+    tabContainer: {
+        flexDirection: "row",
+        backgroundColor: "#E2E8F0",
+        borderRadius: 10,
+        padding: 3,
+        marginBottom: 14,
+    },
+    tabButton: {
+        flex: 1,
+        paddingVertical: 8,
+        alignItems: "center",
+        borderRadius: 8,
+    },
+    tabButtonActive: {
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    tabButtonText: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#64748B",
+    },
+    tabButtonTextActive: {
+        color: "#16A34A",
     },
     listHeaderRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 10,
+        paddingHorizontal: 2,
+    },
+    listTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#334155",
     },
     refreshLink: {
-        color: "#16A34A",
         fontSize: 12,
         fontWeight: "700",
+        color: "#16A34A",
     },
     emptyContainer: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        padding: 30,
+        borderRadius: 12,
+        padding: 24,
         alignItems: "center",
         borderWidth: 1,
         borderColor: "#E2E8F0",
+        borderStyle: "dashed",
+        marginVertical: 10,
     },
     emptyIcon: {
-        fontSize: 40,
-        marginBottom: 10,
+        fontSize: 34,
+        marginBottom: 6,
     },
     emptyTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "700",
-        color: "#1E293B",
-        marginBottom: 4,
+        color: "#475569",
     },
     emptySubtitle: {
-        fontSize: 13,
-        color: "#64748B",
+        fontSize: 12,
+        color: "#94A3B8",
         textAlign: "center",
-        lineHeight: 18,
+        marginTop: 4,
     },
     orderCard: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 12,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: "#E2E8F0",
-        elevation: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 3,
+        elevation: 2,
     },
     orderCardTop: {
         flexDirection: "row",
@@ -474,24 +589,23 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     statusBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12,
     },
     statusBadgeText: {
         fontSize: 11,
-        fontWeight: "700",
+        fontWeight: "800",
     },
     orderNotes: {
         fontSize: 12,
         color: "#475569",
         marginTop: 8,
-        fontStyle: "italic",
     },
     cardDivider: {
         height: 1,
         backgroundColor: "#F1F5F9",
-        marginVertical: 12,
+        marginVertical: 10,
     },
     orderCardBottom: {
         flexDirection: "row",
@@ -504,8 +618,8 @@ const styles = StyleSheet.create({
         color: "#334155",
     },
     billBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
         borderRadius: 6,
     },
     billBadgeUploaded: {
@@ -519,9 +633,9 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
     billBadgeTextUploaded: {
-        color: "#15803D",
+        color: "#16A34A",
     },
     billBadgeTextPending: {
-        color: "#B45309",
+        color: "#D97706",
     },
 });

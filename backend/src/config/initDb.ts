@@ -53,8 +53,14 @@ export const initializeDatabase = async () => {
         quantity NUMERIC(10, 2) NOT NULL,
         unit VARCHAR(50) NOT NULL DEFAULT 'kg',
         notes TEXT,
+        is_checked BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Ensure is_checked column exists in existing tables
+    await pool.query(`
+      ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_checked BOOLEAN DEFAULT FALSE;
     `);
 
     // 5. Create Keep Alive Ping Table (Prevents Render and Supabase from sleeping)
@@ -69,20 +75,17 @@ export const initializeDatabase = async () => {
 
     console.log("Database tables verified / created successfully.");
 
-    // 5. Seed Franchises if none exist
+    // 5. Seed Franchises if none exist - Single Branch: Bhilwadi, Sangli
     const franchiseCount = await pool.query("SELECT COUNT(*) FROM franchises");
     if (parseInt(franchiseCount.rows[0].count) === 0) {
       await pool.query(`
         INSERT INTO franchises (name, code, address, phone) VALUES
-        ('Mart Express - Branch 1', 'BR01', 'Shivaji Nagar, Pune', '9876543210'),
-        ('Mart Express - Branch 2', 'BR02', 'Kothrud, Pune', '9876543211'),
-        ('Mart Express - Branch 3', 'BR03', 'Hadapsar, Pune', '9876543212'),
-        ('Mart Express - Branch 4', 'BR04', 'Wakad, Pune', '9876543213');
+        ('अरिहंत बाजार (भिलवडी, सांगली)', 'BHILWADI', 'भिलवडी, ता. पलूस, जि. सांगली', '9876543210');
       `);
-      console.log("Seeded 4 default franchises.");
+      console.log("Seeded default franchise: Bhilwadi, Sangli.");
     }
 
-    // 6. Seed Admin & Branch Users if none exist
+    // 6. Seed Admin & Branch User if none exist
     const userCount = await pool.query("SELECT COUNT(*) FROM users");
     if (parseInt(userCount.rows[0].count) === 0) {
       const hashedAdminPass = await bcrypt.hash("admin123", 10);
@@ -91,45 +94,18 @@ export const initializeDatabase = async () => {
       // Admin user
       await pool.query(`
         INSERT INTO users (name, email, password, role)
-        VALUES ('Central Admin', 'admin@mart.com', $1, 'admin');
+        VALUES ('अरिहंत बाजार मुख्य ॲडमिन', 'admin@mart.com', $1, 'admin');
       `, [hashedAdminPass]);
 
-      // Franchise Managers
-      const branches = await pool.query("SELECT id, name, code FROM franchises ORDER BY id ASC");
-      for (let i = 0; i < branches.rows.length; i++) {
-        const branch = branches.rows[i];
-        const email = `branch${i + 1}@mart.com`;
+      // Franchise Manager for Bhilwadi
+      const branchRes = await pool.query("SELECT id, name, code FROM franchises WHERE code = 'BHILWADI' LIMIT 1");
+      const branch = branchRes.rows[0];
+      if (branch) {
         await pool.query(`
           INSERT INTO users (name, email, password, role, franchise_id)
-          VALUES ($1, $2, $3, 'franchise', $4);
-        `, [
-          `${branch.name} Manager`,
-          email,
-          hashedBranchPass,
-          branch.id
-        ]);
-      }
-      console.log("Seeded Admin and 4 Franchise Manager users.");
-
-      // Seed 1 Sample Order for Branch 1
-      const branch1 = branches.rows[0];
-      const branch1User = await pool.query("SELECT id FROM users WHERE email = 'branch1@mart.com'");
-      if (branch1 && branch1User.rows.length > 0) {
-        const sampleOrder = await pool.query(`
-          INSERT INTO material_orders (franchise_id, user_id, status, notes)
-          VALUES ($1, $2, 'pending', 'Urgent morning stock needed')
-          RETURNING id;
-        `, [branch1.id, branch1User.rows[0].id]);
-
-        const orderId = sampleOrder.rows[0].id;
-        await pool.query(`
-          INSERT INTO order_items (order_id, item_name, quantity, unit) VALUES
-          ($1, 'Sugar (साखर)', 50, 'kg'),
-          ($1, 'Cooking Oil (खाद्यतेल)', 10, 'litre'),
-          ($1, 'Wheat Flour / Atta (गहू पीठ)', 25, 'kg'),
-          ($1, 'Tea Powder (चहा पावडर)', 5, 'kg');
-        `, [orderId]);
-        console.log("Seeded sample order for Branch 1.");
+          VALUES ('भिलवडी शाखा व्यवस्थापक', 'bhilwadi@mart.com', $1, 'franchise', $2);
+        `, [hashedBranchPass, branch.id]);
+        console.log("Seeded Admin and Bhilwadi Branch Manager user.");
       }
     }
   } catch (error) {

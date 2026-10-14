@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-    SafeAreaView,
     View,
     Text,
     TextInput,
@@ -13,6 +12,7 @@ import {
     ScrollView,
     Image,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { CURRENT_HOST, setCustomHost } from "../../services/api";
 import { saveAuthData, UserSession } from "../../services/storage";
 
@@ -21,6 +21,7 @@ interface Props {
 }
 
 export default function LoginScreen({ onLoginSuccess }: Props) {
+    const insets = useSafeAreaInsets();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +52,7 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
 
             Alert.alert(
                 "लॉगिन यशस्वी! ✅",
-                `स्वागत आहे, ${user.name} (${user.role === "admin" ? "केंद्रीय ॲडमिन" : user.franchise_name})`
+                `स्वागत आहे, ${user.name} (${user.role === "admin" ? "केंद्रीय ॲडमिन" : (user.franchise_name || "भिलवडी शाखा")})`
             );
 
             onLoginSuccess(user);
@@ -74,13 +75,13 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]} edges={["top", "bottom"]}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 32) }]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -94,56 +95,36 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
                         <View style={styles.badge}>
                             <Text style={styles.badgeText}>🛒 ARIHANT BAZAR</Text>
                         </View>
-                        <Text style={styles.title}>अरिहंत बाजार फ्रँचायझी</Text>
+                        <Text style={styles.title}>अरिहंत बाजार (भिलवडी, सांगली)</Text>
                         <Text style={styles.subtitle}>
                             दैनिक मटेरियल मागणी आणि बिल व्यवस्थापन
                         </Text>
                     </View>
 
-                    {/* Quick Login Chips for Ease of Testing */}
+                    {/* Quick Login Chips for Single Bhilwadi Branch & Admin */}
                     <View style={styles.quickLoginCard}>
                         <Text style={styles.quickLoginTitle}>
-                            ⚡ १-क्लिक टेस्ट लॉगिन (Quick Login):
+                            ⚡ १-क्लिक जलद लॉगिन (Quick Login):
                         </Text>
                         <View style={styles.chipsRow}>
                             <TouchableOpacity
-                                style={[styles.chip, styles.chipBranch]}
-                                onPress={() => handleQuickLogin("branch1@mart.com", "branch123")}
+                                style={[styles.chip, styles.chipBranch, { flex: 1, marginRight: 6 }]}
+                                onPress={() => handleQuickLogin("bhilwadi@mart.com", "branch123")}
                                 disabled={loading}
                             >
-                                <Text style={styles.chipText}>शाखा १ (Shivaji Nagar)</Text>
+                                <Text style={styles.chipText}>🏢 भिलवडी शाखा मॅनेजर</Text>
+                                <Text style={{ fontSize: 11, color: "#16A34A", marginTop: 2 }}>भिलवडी, सांगली</Text>
                             </TouchableOpacity>
+
                             <TouchableOpacity
-                                style={[styles.chip, styles.chipBranch]}
-                                onPress={() => handleQuickLogin("branch2@mart.com", "branch123")}
+                                style={[styles.chip, styles.chipAdmin, { flex: 1, marginLeft: 6 }]}
+                                onPress={() => handleQuickLogin("admin@mart.com", "admin123")}
                                 disabled={loading}
                             >
-                                <Text style={styles.chipText}>शाखा २ (Kothrud)</Text>
+                                <Text style={styles.chipAdminText}>👑 मुख्य ॲडमिन</Text>
+                                <Text style={{ fontSize: 11, color: "#2563EB", marginTop: 2 }}>Central Admin</Text>
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.chipsRow}>
-                            <TouchableOpacity
-                                style={[styles.chip, styles.chipBranch]}
-                                onPress={() => handleQuickLogin("branch3@mart.com", "branch123")}
-                                disabled={loading}
-                            >
-                                <Text style={styles.chipText}>शाखा ३ (Hadapsar)</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.chip, styles.chipBranch]}
-                                onPress={() => handleQuickLogin("branch4@mart.com", "branch123")}
-                                disabled={loading}
-                            >
-                                <Text style={styles.chipText}>शाखा ४ (Wakad)</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity
-                            style={[styles.chip, styles.chipAdmin]}
-                            onPress={() => handleQuickLogin("admin@mart.com", "admin123")}
-                            disabled={loading}
-                        >
-                            <Text style={styles.chipAdminText}>👑 मुख्य ॲडमिन (Central Admin)</Text>
-                        </TouchableOpacity>
                     </View>
 
                     {/* Form Card */}
@@ -153,7 +134,7 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
                         <Text style={styles.label}>ईमेल (Email ID)</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="उदा. branch1@mart.com किंवा admin@mart.com"
+                            placeholder="उदा. bhilwadi@mart.com किंवा admin@mart.com"
                             placeholderTextColor="#94A3B8"
                             value={email}
                             onChangeText={setEmail}
