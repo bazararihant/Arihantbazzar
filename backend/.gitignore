@@ -1,3 +1,5 @@
 node_modules/
 .env
 dist/
+*firebase-adminsdk*.json
+firebase-service-account.json

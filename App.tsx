@@ -9,6 +9,7 @@ import OrderHistoryScreen from "./src/screens/orders/OrderHistoryScreen";
 import AdminDashboardScreen from "./src/screens/admin/AdminDashboardScreen";
 import CashLedgerScreen from "./src/screens/ledger/CashLedgerScreen";
 import { getUser, UserSession } from "./src/services/storage";
+import { registerDeviceToken, setupNotificationListeners } from "./src/services/notificationService";
 
 type ScreenType =
     | "login"
@@ -26,12 +27,27 @@ export default function App() {
     const [historyTab, setHistoryTab] = useState<"orders" | "report">("orders");
     const [initializing, setInitializing] = useState(true);
 
+    // Setup Notification Listeners
+    useEffect(() => {
+        const unsubscribe = setupNotificationListeners((orderId) => {
+            setSelectedOrderId(orderId);
+            setCurrentScreen("order_detail");
+        });
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
+
     useEffect(() => {
         const checkSession = async () => {
             try {
                 const storedUser = await getUser();
                 if (storedUser) {
                     setUser(storedUser);
+                    // Register FCM push token for this device
+                    registerDeviceToken();
+
                     if (storedUser.role === "admin") {
                         setCurrentScreen("admin_dashboard");
                     } else {
@@ -53,6 +69,9 @@ export default function App() {
 
     const handleLoginSuccess = (loggedInUser: UserSession) => {
         setUser(loggedInUser);
+        // Register FCM push token upon login
+        registerDeviceToken();
+
         if (loggedInUser.role === "admin") {
             setCurrentScreen("admin_dashboard");
         } else {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "399785794090",
+    "project_id": "arihant-a3d5d",
+    "storage_bucket": "arihant-a3d5d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:399785794090:android:60094fd89d4753d13c8153",
+        "android_client_info": {
+          "package_name": "com.automotiveapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5OeTo6gmE22vFJRB6bVEPnaklNOdm3aQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

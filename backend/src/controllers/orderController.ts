@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { pool } from "../config/db";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { sendPushNotificationToAdmins } from "../services/notificationService";
+
 
 // 1. Create a new material order with items
 export const createOrder = async (req: AuthRequest, res: Response) => {
@@ -73,6 +75,16 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
                 "SELECT name, code FROM franchises WHERE id = $1",
                 [targetFranchiseId]
             );
+
+            const franchiseName = franchiseRes.rows[0]?.name || "शाखा";
+
+            // Trigger Push Notification to Admin(s)
+            sendPushNotificationToAdmins({
+                title: "🔔 नवीन ऑर्डर प्राप्त!",
+                body: `${franchiseName} ने नवीन ऑर्डर #${order.id} टाकली आहे (${insertedItems.length} वस्तू).`,
+                orderId: order.id,
+                type: "NEW_ORDER",
+            }).catch((err) => console.error("Notification trigger error:", err));
 
             return res.status(201).json({
                 message: "Order placed successfully",

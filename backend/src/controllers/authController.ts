@@ -139,3 +139,32 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const saveFcmToken = async (req: AuthRequest, res: Response) => {
+    try {
+        const { fcm_token, device_type = "android" } = req.body;
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        if (!fcm_token) {
+            return res.status(400).json({ message: "fcm_token is required" });
+        }
+
+        await pool.query(
+            `INSERT INTO user_fcm_tokens (user_id, fcm_token, device_type, updated_at)
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_id, fcm_token)
+             DO UPDATE SET updated_at = CURRENT_TIMESTAMP, device_type = $3`,
+            [user.id, fcm_token, device_type]
+        );
+
+        return res.json({ message: "FCM token saved successfully" });
+    } catch (error) {
+        console.error("Save FCM token error:", error);
+        return res.status(500).json({ message: "Failed to save FCM token" });
+    }
+};
+
