@@ -50,6 +50,29 @@ app.get("/api/ping", async (req, res) => {
   }
 });
 
+// Test Push Notification Route
+app.all("/api/test-notification", async (req, res) => {
+  try {
+    const { sendPushNotificationToAdmins, sendPushNotificationToFranchise } = await import("./services/notificationService");
+    await sendPushNotificationToAdmins({
+      title: "🔔 टेस्ट नोटिफिकेशन (Admin)",
+      body: "अरिहंत बाजार ॲप नोटिफिकेशन यशस्वीरित्या कार्यरत आहे! ✅",
+    });
+    await sendPushNotificationToFranchise(1, {
+      title: "🔔 टेस्ट नोटिफिकेशन (Franchise)",
+      body: "अरिहंत बाजार भिलवडी शाखेसाठी टेस्ट नोटिफिकेशन! ✅",
+    });
+
+    res.json({
+      success: true,
+      message: "टेस्ट नोटिफिकेशन्स सर्व नोंदणीकृत डिव्हाइसेसवर पाठवण्यात आल्या आहेत! ✅",
+    });
+  } catch (error: any) {
+    console.error("Test Notification Error:", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(Number(PORT), "0.0.0.0", async () => {

@@ -732,8 +732,8 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     </TouchableOpacity>
                 </View>
 
-                {/* BILL / INVOICE SECTION - Hidden for Workers */}
-                {currentUser.role !== "worker" && (
+                {/* BILL / INVOICE SECTION - Admin Only */}
+                {isAdmin && (
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>🧾 बिलाचा फोटो (Bill / Invoice Image)</Text>
 

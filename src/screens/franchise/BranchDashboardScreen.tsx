@@ -200,32 +200,8 @@ export default function BranchDashboardScreen({
                     </View>
                 </TouchableOpacity>
 
-                {/* Cash Ledger Action Button - Hidden for Workers */}
-                {user.role !== "worker" && onViewLedger && (
-                    <TouchableOpacity
-                        style={styles.ledgerBtn}
-                        onPress={onViewLedger}
-                        activeOpacity={0.85}
-                    >
-                        <View style={styles.createBtnContent}>
-                            <View style={styles.moneyCircle}>
-                                <Text style={styles.moneyIcon}>💰</Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.ledgerBtnTitle}>
-                                    रोख जमा-खर्च हिशोब (Cash Ledger)
-                                </Text>
-                                <Text style={styles.ledgerBtnSubtitle}>
-                                    ॲडमिनसोबतचा पैशांची देवाणघेवाण व बाकी हिशोब पहा
-                                </Text>
-                            </View>
-                            <Text style={styles.ledgerBtnArrow}>➔</Text>
-                        </View>
-                    </TouchableOpacity>
-                )}
-
-                {/* Worker Attendance & Salary Button - for Sub-Admin / Manager */}
-                {user.role !== "worker" && onViewSalary && (
+                {/* Worker Attendance & Salary Button - only for Admin */}
+                {user.role === "admin" && onViewSalary && (
                     <TouchableOpacity
                         style={styles.salaryBtn}
                         onPress={onViewSalary}
@@ -385,8 +361,8 @@ export default function BranchDashboardScreen({
                                         ) : null}
                                     </View>
 
-                                    {/* Bill Status Indicator - Hidden for workers */}
-                                    {user.role !== "worker" && (
+                                    {/* Bill Status Indicator - Only for Admin */}
+                                    {user.role === "admin" && (
                                         <View
                                             style={[
                                                 styles.billBadge,

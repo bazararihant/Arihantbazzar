@@ -91,7 +91,7 @@ export default function OrderHistoryScreen({
     initialTab = "orders",
 }: Props) {
     const insets = useSafeAreaInsets();
-    const [currentTab, setCurrentTab] = useState<MainTabType>(initialTab);
+    const [currentTab, setCurrentTab] = useState<MainTabType>(user.role === "admin" ? initialTab : "orders");
 
     // ==================== ORDERS LIST STATE ====================
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -145,6 +145,10 @@ export default function OrderHistoryScreen({
 
     // Load Expense Report
     const loadExpenseReport = useCallback(async () => {
+        if (user.role !== "admin") {
+            setReportLoading(false);
+            return;
+        }
         try {
             setReportLoading(true);
             const params: any = {};
@@ -438,7 +442,7 @@ export default function OrderHistoryScreen({
                     </Text>
                 </TouchableOpacity>
 
-                {user.role !== "worker" && (
+                {user.role === "admin" && (
                     <TouchableOpacity
                         style={[styles.segmentBtn, currentTab === "report" && styles.segmentBtnActiveReport]}
                         onPress={() => setCurrentTab("report")}
@@ -583,10 +587,21 @@ export default function OrderHistoryScreen({
                             <Text style={styles.summaryLbl}>एकूण वस्तू</Text>
                         </View>
                         <View style={styles.summaryBox}>
-                            <Text style={[styles.summaryNum, { color: "#2563EB" }]}>
-                                ₹{totalBillAmount.toLocaleString("en-IN")}
-                            </Text>
-                            <Text style={styles.summaryLbl}>बिलांची रक्कम</Text>
+                            {user.role === "admin" ? (
+                                <>
+                                    <Text style={[styles.summaryNum, { color: "#2563EB" }]}>
+                                        ₹{totalBillAmount.toLocaleString("en-IN")}
+                                    </Text>
+                                    <Text style={styles.summaryLbl}>बिलांची रक्कम</Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={[styles.summaryNum, { color: "#D97706" }]}>
+                                        {filteredOrders.filter((o) => o.status === "pending").length}
+                                    </Text>
+                                    <Text style={styles.summaryLbl}>प्रलंबित ऑर्डर्स</Text>
+                                </>
+                            )}
                         </View>
                     </View>
 
@@ -680,7 +695,7 @@ export default function OrderHistoryScreen({
                                             </Text>
                                         </View>
 
-                                        {user.role !== "worker" && order.bill_amount ? (
+                                        {user.role === "admin" && order.bill_amount ? (
                                             <View style={styles.orderInfoRow}>
                                                 <Text style={styles.orderInfoLabel}>💵 बिलाची रक्कम:</Text>
                                                 <Text style={[styles.orderInfoVal, { fontWeight: "800", color: "#16A34A" }]}>

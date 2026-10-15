@@ -29,8 +29,8 @@ const getActiveFranchiseId = async (req: AuthRequest): Promise<number | null> =>
  */
 export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role === "worker") {
-            return res.status(403).json({ message: "तुम्हाला पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी नाही." });
+        if (req.user?.role !== "admin") {
+            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला पैशांचा व खतावणीचा हिशोब पाहण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -100,8 +100,8 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
  */
 export const getLedgerTransactions = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role === "worker") {
-            return res.status(403).json({ message: "कामगारांना पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी नाही." });
+        if (req.user?.role !== "admin") {
+            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -164,8 +164,8 @@ export const getLedgerTransactions = async (req: AuthRequest, res: Response) => 
 export const createLedgerTransaction = async (req: AuthRequest, res: Response) => {
     try {
         const user = req.user!;
-        if (user.role === "worker") {
-            return res.status(403).json({ message: "कामगारांना कॅश व्यवहार नोंदवण्याची परवानगी नाही." });
+        if (user.role !== "admin") {
+            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला कॅश व्यवहार नोंदवण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -213,6 +213,10 @@ export const createLedgerTransaction = async (req: AuthRequest, res: Response) =
  */
 export const deleteLedgerTransaction = async (req: AuthRequest, res: Response) => {
     try {
+        if (req.user?.role !== "admin") {
+            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला व्यवहार डिलीट करण्याची परवानगी आहे." });
+        }
+
         const { id } = req.params;
 
         const result = await pool.query("DELETE FROM cash_transactions WHERE id = $1 RETURNING id", [id]);

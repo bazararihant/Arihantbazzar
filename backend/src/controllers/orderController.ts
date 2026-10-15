@@ -168,9 +168,9 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 
         const result = await pool.query(query, params);
 
-        // Workers should not see bill amounts
+        // Only Admin can see bill amounts and bill images
         const sanitizedOrders = result.rows.map((row: any) => {
-            if (user.role === "worker") {
+            if (user.role !== "admin") {
                 return {
                     ...row,
                     bill_amount: null,
@@ -216,8 +216,8 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ message: "Forbidden" });
         }
 
-        // Hide bill information from workers
-        if (user.role === "worker") {
+        // Hide bill information from all non-admin users (Manager, Worker, Franchise)
+        if (user.role !== "admin") {
             order.bill_amount = null;
             order.bill_image_url = null;
         }
@@ -313,10 +313,9 @@ export const uploadBill = async (req: AuthRequest, res: Response) => {
 
         // Notify franchise that bill has been uploaded
         if (updatedOrder.franchise_id) {
-            const billText = updatedOrder.bill_amount ? ` (रक्कम: ₹${updatedOrder.bill_amount})` : "";
             sendPushNotificationToFranchise(updatedOrder.franchise_id, {
                 title: "📄 बिल अपलोड झाले आहे",
-                body: `तुमच्या ऑर्डर #${id} चे बिल${billText} ॲडमिनने अपलोड केले आहे.`,
+                body: `तुमच्या ऑर्डर #${id} चे बिल ॲडमिनने अपलोड केले आहे.`,
                 orderId: Number(id),
                 type: "BILL_UPLOADED",
             }).catch((err) => console.error("Franchise bill notification error:", err));
@@ -630,6 +629,10 @@ export const deleteOrder = async (req: AuthRequest, res: Response) => {
 // 14. Monthly & Custom Date Range Expense Report
 export const getExpenseReport = async (req: AuthRequest, res: Response) => {
     try {
+        if (req.user?.role !== "admin") {
+            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला खर्चाचा हिशोब पाहण्याची परवानगी आहे." });
+        }
+
         const { start_date, end_date, month, year } = req.query;
         let query = `
             SELECT 
