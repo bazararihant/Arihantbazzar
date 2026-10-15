@@ -223,171 +223,110 @@ export default function AdminDashboardScreen({
                 }
                 showsVerticalScrollIndicator={false}
             >
-                {/* BIG ACTION BUTTON TO CREATE NEW ORDER (ADMIN / SUB-ADMIN) */}
+                {/* COMPACT ACTION BUTTON TO CREATE NEW ORDER (ADMIN / SUB-ADMIN) */}
                 {onCreateOrder && (
                     <TouchableOpacity
-                        style={styles.createOrderBtn}
+                        style={styles.compactCreateBtn}
                         onPress={onCreateOrder}
-                        activeOpacity={0.88}
+                        activeOpacity={0.85}
                     >
-                        <View style={styles.createBtnContent}>
-                            <View style={styles.plusCircle}>
-                                <Text style={styles.plusIcon}>＋</Text>
+                        <View style={styles.compactCreateBtnLeft}>
+                            <View style={styles.compactPlusCircle}>
+                                <Text style={styles.compactPlusIcon}>＋</Text>
                             </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.createBtnTitle}>
-                                    नवीन सामानाची लिस्ट पाठवा / ऑर्डर टाका
-                                </Text>
-                                <Text style={styles.createBtnSubtitle}>
-                                    Daily Material Indent / सामानाची नवीन मागणी नोंदवा
-                                </Text>
-                            </View>
-                            <Text style={styles.createBtnArrow}>➔</Text>
+                            <Text style={styles.compactCreateBtnTitle}>
+                                नवीन सामानाची लिस्ट पाठवा / ऑर्डर टाका
+                            </Text>
                         </View>
+                        <Text style={styles.compactCreateBtnArrow}>➔</Text>
                     </TouchableOpacity>
                 )}
 
-                {/* BIG PROMINENT HISTORY NAVIGATION CARD */}
-                <TouchableOpacity
-                    style={styles.historyActionCard}
-                    onPress={() => onViewHistory("orders")}
-                    activeOpacity={0.88}
-                >
-                    <View style={styles.historyActionContent}>
-                        <View style={styles.historyIconCircle}>
-                            <Text style={styles.historyIconText}>📜</Text>
+                {/* 2x2 COMPACT QUICK ACTION GRID */}
+                <View style={styles.actionGrid}>
+                    {/* History Card */}
+                    <TouchableOpacity
+                        style={[styles.actionGridItem, { borderColor: "#BFDBFE" }]}
+                        onPress={() => onViewHistory("orders")}
+                        activeOpacity={0.8}
+                    >
+                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#EFF6FF" }]}>
+                            <Text style={styles.actionGridIcon}>📜</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.historyActionTitle}>
-                                संपूर्ण ऑर्डर इतिहास पहा (Order History)
-                            </Text>
-                            <Text style={styles.historyActionSub}>
-                                सर्व जुन्या ऑर्डर्स किंवा तारीख निवडून कस्टम इतिहास पाहण्यासाठी येथे क्लिक करा
-                            </Text>
+                            <Text style={styles.actionGridTitle} numberOfLines={1}>ऑर्डर इतिहास</Text>
+                            <Text style={styles.actionGridSub} numberOfLines={1}>सर्व जुन्या ऑर्डर्स</Text>
                         </View>
-                        <Text style={styles.historyActionArrow}>➔</Text>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
 
-                {/* USER MANAGEMENT & ROLE ACCESS BUTTON */}
-                <TouchableOpacity
-                    style={styles.userManagementBtn}
-                    onPress={() => setShowUserModal(true)}
-                    activeOpacity={0.88}
-                >
-                    <View style={styles.ledgerActionContent}>
-                        <View style={[styles.ledgerIconCircle, { backgroundColor: "#EFF6FF" }]}>
-                            <Text style={styles.ledgerIconText}>👥</Text>
+                    {/* Worker Attendance & Salary */}
+                    <TouchableOpacity
+                        style={[styles.actionGridItem, { borderColor: "#BBF7D0" }]}
+                        onPress={onViewSalary}
+                        activeOpacity={0.8}
+                    >
+                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#DCFCE7" }]}>
+                            <Text style={styles.actionGridIcon}>👷</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <View style={styles.ledgerBadgeRow}>
-                                <Text style={styles.ledgerActionTitle}>
-                                    युजर व्यवस्थापन (User Management)
-                                </Text>
-                                <View style={[styles.newBadge, { backgroundColor: "#2563EB" }]}>
-                                    <Text style={styles.newBadgeText}>ॲक्सेस</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.ledgerActionSub}>
-                                नवीन शाखा मॅनेजर जोडा, पासवर्ड सेट करा आणि खाती व्यवस्थापित करा
-                            </Text>
+                            <Text style={styles.actionGridTitle} numberOfLines={1}>कामगार पगार</Text>
+                            <Text style={styles.actionGridSub} numberOfLines={1}>हजेरी व उचल</Text>
                         </View>
-                        <Text style={styles.ledgerActionArrow}>➔</Text>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
 
-                {/* WORKER ATTENDANCE & SALARY MANAGEMENT CARD */}
-                <TouchableOpacity
-                    style={styles.salaryActionCard}
-                    onPress={onViewSalary}
-                    activeOpacity={0.88}
-                >
-                    <View style={styles.ledgerActionContent}>
-                        <View style={[styles.ledgerIconCircle, { backgroundColor: "#DCFCE7" }]}>
-                            <Text style={styles.ledgerIconText}>👷</Text>
+                    {/* Cash Ledger */}
+                    <TouchableOpacity
+                        style={[styles.actionGridItem, { borderColor: "#BAE6FD" }]}
+                        onPress={onViewLedger}
+                        activeOpacity={0.8}
+                    >
+                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#F0F9FF" }]}>
+                            <Text style={styles.actionGridIcon}>💰</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <View style={styles.ledgerBadgeRow}>
-                                <Text style={styles.ledgerActionTitle}>
-                                    कामगार हजेरी व पगार (Worker Attendance & Salary)
-                                </Text>
-                                <View style={[styles.newBadge, { backgroundColor: "#16A34A" }]}>
-                                    <Text style={styles.newBadgeText}>हजेरी / उचल</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.ledgerActionSub}>
-                                रोजची हजेरी (पूर्ण/अर्धा दिवस), पगार, उचल/ॲडव्हान्स ट्रॅकिंग, मासिक व कस्टम अहवाल
-                            </Text>
+                            <Text style={styles.actionGridTitle} numberOfLines={1}>कॅश लेजर</Text>
+                            <Text style={styles.actionGridSub} numberOfLines={1}>जमा-खर्च हिशोब</Text>
                         </View>
-                        <Text style={styles.ledgerActionArrow}>➔</Text>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
 
-                {/* CASH LEDGER & BROTHER SETTLEMENT CARD */}
-                <TouchableOpacity
-                    style={styles.ledgerActionCard}
-                    onPress={onViewLedger}
-                    activeOpacity={0.88}
-                >
-                    <View style={styles.ledgerActionContent}>
-                        <View style={styles.ledgerIconCircle}>
-                            <Text style={styles.ledgerIconText}>💰</Text>
+                    {/* User Management */}
+                    <TouchableOpacity
+                        style={[styles.actionGridItem, { borderColor: "#DDD6FE" }]}
+                        onPress={() => setShowUserModal(true)}
+                        activeOpacity={0.8}
+                    >
+                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#F5F3FF" }]}>
+                            <Text style={styles.actionGridIcon}>👥</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <View style={styles.ledgerBadgeRow}>
-                                <Text style={styles.ledgerActionTitle}>
-                                    रोख जमा-खर्च हिशोब (Cash Ledger)
-                                </Text>
-                                <View style={styles.newBadge}>
-                                    <Text style={styles.newBadgeText}>खतावणी</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.ledgerActionSub}>
-                                अरिहंत बाजार आणि ॲडमिनमधील कॅश देवाणघेवाण व अंतिम बाकी हिशोब पहा
-                            </Text>
+                            <Text style={styles.actionGridTitle} numberOfLines={1}>युजर मॅनेजमेंट</Text>
+                            <Text style={styles.actionGridSub} numberOfLines={1}>शाखा खाती</Text>
                         </View>
-                        <Text style={styles.ledgerActionArrow}>➔</Text>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </View>
 
-                {/* MONTHLY EXPENSE HIGHLIGHT BANNER */}
+                {/* COMPACT MONTHLY EXPENSE STRIP */}
                 <TouchableOpacity
-                    style={styles.monthlyExpenseCard}
+                    style={styles.compactMonthlyStrip}
                     onPress={() => onViewHistory("report")}
-                    activeOpacity={0.88}
+                    activeOpacity={0.85}
                 >
-                    <View style={styles.monthlyExpenseHeader}>
-                        <View style={styles.monthlyBadge}>
-                            <Text style={styles.monthlyBadgeText}>💰 {currentMonthStats.monthName} चा एकूण खर्च</Text>
+                    <View style={styles.monthlyStripLeft}>
+                        <View style={styles.monthlyStripBadge}>
+                            <Text style={styles.monthlyStripBadgeText}>💰 {currentMonthStats.monthName}</Text>
                         </View>
-                        <Text style={styles.monthlyReportLinkText}>खर्च अहवाल पहा ➔</Text>
+                        <Text style={styles.monthlyStripAmount}>
+                            ₹{currentMonthStats.totalExpense.toLocaleString("en-IN")}
+                        </Text>
+                        <Text style={styles.monthlyStripCount}>({currentMonthStats.ordersInMonth} ऑर्डर्स)</Text>
                     </View>
-
-                    <View style={styles.monthlyExpenseContent}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.monthlyExpenseAmount}>
-                                ₹ {currentMonthStats.totalExpense.toLocaleString("en-IN")}
-                            </Text>
-                            <Text style={styles.monthlyExpenseSub}>
-                                या महिन्यात {currentMonthStats.ordersInMonth} ऑर्डर्स नोंदवल्या गेल्या (तारीखनिहाय तपशील पहा)
-                            </Text>
-                        </View>
-                        <View style={styles.monthlyIconBox}>
-                            <Text style={styles.monthlyIconText}>📊</Text>
-                        </View>
-                    </View>
+                    <Text style={styles.monthlyStripLink}>खर्च अहवाल ➔</Text>
                 </TouchableOpacity>
 
-                {/* TODAY'S ORDERS BANNER */}
-                <View style={styles.todayHeaderBanner}>
-                    <View style={styles.todayBadge}>
-                        <Text style={styles.todayBadgeText}>⚡ आजचे थेट काम</Text>
-                    </View>
+                {/* COMPACT TODAY'S ORDERS HEADER */}
+                <View style={styles.todayHeaderRow}>
                     <Text style={styles.todayTitle}>
                         📅 आजच्या ऑर्डर्स ({todayFormatted})
-                    </Text>
-                    <Text style={styles.todaySub}>
-                        फक्त आज नोंदवलेल्या ऑर्डर्सचे रिअल-टाइम तपशील
                     </Text>
                 </View>
 
@@ -557,14 +496,51 @@ export default function AdminDashboardScreen({
 }
 
 const styles = StyleSheet.create({
-    userManagementBtn: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1.5,
-        borderColor: "#93C5FD",
-        elevation: 2,
+    compactCreateBtn: {
+        backgroundColor: "#16A34A",
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        marginBottom: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        shadowColor: "#16A34A",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    compactCreateBtnLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    compactPlusCircle: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: "rgba(255, 255, 255, 0.25)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 8,
+    },
+    compactPlusIcon: {
+        fontSize: 16,
+        color: "#FFFFFF",
+        fontWeight: "900",
+    },
+    compactCreateBtnTitle: {
+        fontSize: 13,
+        fontWeight: "800",
+        color: "#FFFFFF",
+        flex: 1,
+    },
+    compactCreateBtnArrow: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#FFFFFF",
+        marginLeft: 6,
     },
     orderCreatorBadge: {
         backgroundColor: "#F1F5F9",
@@ -647,170 +623,139 @@ const styles = StyleSheet.create({
     scrollContent: {
         padding: 14,
     },
-    historyActionCard: {
-        backgroundColor: "#1E293B",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+    actionGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        marginBottom: 8,
+        gap: 8,
     },
-    historyActionContent: {
+    actionGridItem: {
+        width: "48.5%",
+        backgroundColor: "#FFFFFF",
+        borderRadius: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
         flexDirection: "row",
         alignItems: "center",
+        borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
     },
-    historyIconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
+    actionGridIconCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         alignItems: "center",
         justifyContent: "center",
-        marginRight: 12,
+        marginRight: 6,
     },
-    historyIconText: {
-        fontSize: 22,
-    },
-    historyActionTitle: {
+    actionGridIcon: {
         fontSize: 15,
-        fontWeight: "800",
-        color: "#FFFFFF",
     },
-    historyActionSub: {
-        fontSize: 11,
-        color: "#94A3B8",
-        marginTop: 2,
-    },
-    historyActionArrow: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#38BDF8",
-        marginLeft: 8,
-    },
-    monthlyExpenseCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1.5,
-        borderColor: "#86EFAC",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 3,
-    },
-    monthlyExpenseHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 10,
-    },
-    monthlyBadge: {
-        backgroundColor: "#DCFCE7",
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 6,
-    },
-    monthlyBadgeText: {
-        fontSize: 11,
-        fontWeight: "800",
-        color: "#16A34A",
-    },
-    monthlyReportLinkText: {
+    actionGridTitle: {
         fontSize: 12,
+        fontWeight: "800",
+        color: "#1E293B",
+    },
+    actionGridSub: {
+        fontSize: 10,
+        color: "#64748B",
+        marginTop: 1,
+    },
+    compactMonthlyStrip: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 10,
+        paddingVertical: 7,
+        paddingHorizontal: 10,
+        marginBottom: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderWidth: 1,
+        borderColor: "#BBF7D0",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    monthlyStripLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: 6,
+        flex: 1,
+    },
+    monthlyStripBadge: {
+        backgroundColor: "#DCFCE7",
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    monthlyStripBadgeText: {
+        fontSize: 10,
         fontWeight: "700",
         color: "#16A34A",
     },
-    monthlyExpenseContent: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    monthlyExpenseAmount: {
-        fontSize: 26,
+    monthlyStripAmount: {
+        fontSize: 13,
         fontWeight: "900",
         color: "#0F172A",
     },
-    monthlyExpenseSub: {
-        fontSize: 11,
+    monthlyStripCount: {
+        fontSize: 10,
         color: "#64748B",
-        marginTop: 2,
     },
-    monthlyIconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "#F0FDF4",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#BBF7D0",
-        marginLeft: 10,
-    },
-    monthlyIconText: {
-        fontSize: 22,
-    },
-    todayHeaderBanner: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 14,
-        borderWidth: 1.5,
-        borderColor: "#93C5FD",
-    },
-    todayBadge: {
-        backgroundColor: "#DBEAFE",
-        alignSelf: "flex-start",
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        marginBottom: 4,
-    },
-    todayBadgeText: {
+    monthlyStripLink: {
         fontSize: 11,
-        fontWeight: "800",
-        color: "#1D4ED8",
+        fontWeight: "700",
+        color: "#16A34A",
+        marginLeft: 4,
+    },
+    todayHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 6,
+        marginTop: 2,
+        paddingHorizontal: 2,
     },
     todayTitle: {
-        fontSize: 16,
+        fontSize: 13,
         fontWeight: "800",
-        color: "#0F172A",
-    },
-    todaySub: {
-        fontSize: 12,
-        color: "#64748B",
-        marginTop: 2,
+        color: "#1E293B",
     },
     statsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: 14,
+        marginBottom: 10,
     },
     statBox: {
         flex: 1,
         backgroundColor: "#FFFFFF",
-        borderRadius: 10,
-        padding: 10,
-        marginHorizontal: 3,
-        borderLeftWidth: 3.5,
+        borderRadius: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 2,
+        marginHorizontal: 2,
+        borderLeftWidth: 3,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         alignItems: "center",
     },
     statNum: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: "800",
         color: "#0F172A",
     },
     statTxt: {
-        fontSize: 11,
+        fontSize: 10,
         color: "#64748B",
         fontWeight: "600",
-        marginTop: 2,
+        marginTop: 1,
     },
     statusChipsScroll: {
         marginBottom: 14,
@@ -987,126 +932,5 @@ const styles = StyleSheet.create({
     },
     billTextPending: {
         color: "#D97706",
-    },
-    salaryActionCard: {
-        backgroundColor: "#064E3B",
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1.5,
-        borderColor: "#34D399",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    ledgerActionCard: {
-        backgroundColor: "#0F172A",
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1.5,
-        borderColor: "#38BDF8",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    ledgerActionContent: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    ledgerIconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "rgba(56, 189, 248, 0.15)",
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 12,
-    },
-    ledgerIconText: {
-        fontSize: 22,
-    },
-    ledgerBadgeRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 6,
-    },
-    ledgerActionTitle: {
-        fontSize: 14,
-        fontWeight: "800",
-        color: "#FFFFFF",
-        flexShrink: 1,
-    },
-    newBadge: {
-        backgroundColor: "#16A34A",
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    newBadgeText: {
-        color: "#FFFFFF",
-        fontSize: 10,
-        fontWeight: "700",
-    },
-    ledgerActionSub: {
-        fontSize: 11,
-        color: "#94A3B8",
-        marginTop: 2,
-    },
-    ledgerActionArrow: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#38BDF8",
-        marginLeft: 8,
-    },
-    createOrderBtn: {
-        backgroundColor: "#16A34A",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 14,
-        shadowColor: "#16A34A",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    createBtnContent: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    plusCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 12,
-    },
-    plusIcon: {
-        fontSize: 24,
-        color: "#FFFFFF",
-        fontWeight: "800",
-    },
-    createBtnTitle: {
-        fontSize: 15,
-        fontWeight: "800",
-        color: "#FFFFFF",
-    },
-    createBtnSubtitle: {
-        fontSize: 11,
-        color: "#DCFCE7",
-        marginTop: 2,
-    },
-    createBtnArrow: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#FFFFFF",
-        marginLeft: 8,
     },
 });
