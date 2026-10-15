@@ -54,7 +54,7 @@ const UNITS = ORDER_UNITS;
 
 export default function OrderDetailScreen({ orderId, currentUser, onBack }: Props) {
     const insets = useSafeAreaInsets();
-    const isAdmin = currentUser.role === "admin";
+    const isAdmin = currentUser.role === "admin" || currentUser.role === "sub_admin";
 
     const [order, setOrder] = useState<OrderDetail | null>(null);
     const [loading, setLoading] = useState(true);

@@ -193,9 +193,13 @@ export default function AdminDashboardScreen({
             <View style={styles.topBar}>
                 <View>
                     <View style={styles.adminBadge}>
-                        <Text style={styles.adminBadgeText}>👑 CENTRAL ADMIN</Text>
+                        <Text style={styles.adminBadgeText}>
+                            {user.role === "sub_admin" ? "🏢 SUB-ADMIN / सब-ॲडमिन" : "👑 CENTRAL ADMIN"}
+                        </Text>
                     </View>
-                    <Text style={styles.adminTitle}>अरिहंत बाजार मुख्य ॲडमिन</Text>
+                    <Text style={styles.adminTitle}>
+                        {user.name ? `${user.name} (${user.role === "sub_admin" ? "सब-ॲडमिन" : "मुख्य ॲडमिन"})` : "अरिहंत बाजार ॲडमिन"}
+                    </Text>
                     <Text style={styles.adminSubtitle}>
                         🏢 {activeBranch.name}
                     </Text>

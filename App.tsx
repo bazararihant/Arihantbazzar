@@ -50,7 +50,7 @@ export default function App() {
                     // Register FCM push token for this device
                     registerDeviceToken();
 
-                    if (storedUser.role === "admin") {
+                    if (storedUser.role === "admin" || storedUser.role === "sub_admin") {
                         setCurrentScreen("admin_dashboard");
                     } else {
                         setCurrentScreen("branch_dashboard");
@@ -74,7 +74,7 @@ export default function App() {
         // Register FCM push token upon login
         registerDeviceToken();
 
-        if (loggedInUser.role === "admin") {
+        if (loggedInUser.role === "admin" || loggedInUser.role === "sub_admin") {
             setCurrentScreen("admin_dashboard");
         } else {
             setCurrentScreen("branch_dashboard");
@@ -94,7 +94,7 @@ export default function App() {
 
     const handleBackFromDetail = () => {
         setSelectedOrderId(null);
-        if (user?.role === "admin") {
+        if (user?.role === "admin" || user?.role === "sub_admin") {
             setCurrentScreen("admin_dashboard");
         } else {
             setCurrentScreen("branch_dashboard");
@@ -107,7 +107,7 @@ export default function App() {
     };
 
     const handleBackFromHistory = () => {
-        if (user?.role === "admin") {
+        if (user?.role === "admin" || user?.role === "sub_admin") {
             setCurrentScreen("admin_dashboard");
         } else {
             setCurrentScreen("branch_dashboard");
@@ -119,7 +119,7 @@ export default function App() {
     };
 
     const handleBackFromLedger = () => {
-        if (user?.role === "admin") {
+        if (user?.role === "admin" || user?.role === "sub_admin") {
             setCurrentScreen("admin_dashboard");
         } else {
             setCurrentScreen("branch_dashboard");
@@ -131,7 +131,7 @@ export default function App() {
     };
 
     const handleBackFromSalary = () => {
-        if (user?.role === "admin") {
+        if (user?.role === "admin" || user?.role === "sub_admin") {
             setCurrentScreen("admin_dashboard");
         } else {
             setCurrentScreen("branch_dashboard");
@@ -216,7 +216,7 @@ export default function App() {
         }
 
         // 7. Admin Dashboard (Strictly Today's Orders Details)
-        if (currentScreen === "admin_dashboard" && user.role === "admin") {
+        if (currentScreen === "admin_dashboard" && (user.role === "admin" || user.role === "sub_admin")) {
             return (
                 <AdminDashboardScreen
                     user={user}

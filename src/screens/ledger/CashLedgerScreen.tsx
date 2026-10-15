@@ -58,7 +58,7 @@ const QUICK_NOTES = [
 
 export default function CashLedgerScreen({ currentUser, onBack }: Props) {
     const insets = useSafeAreaInsets();
-    const isAdmin = currentUser.role === "admin";
+    const isAdmin = currentUser.role === "admin" || currentUser.role === "sub_admin";
 
     const [summary, setSummary] = useState<LedgerSummary | null>(null);
     const [transactions, setTransactions] = useState<TransactionItem[]>([]);

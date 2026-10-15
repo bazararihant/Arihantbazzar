@@ -117,7 +117,7 @@ export const sendPushNotificationToAdmins = async (payload: {
             SELECT DISTINCT t.fcm_token 
             FROM user_fcm_tokens t
             JOIN users u ON t.user_id = u.id
-            WHERE u.role = 'admin' AND t.fcm_token IS NOT NULL
+            WHERE (u.role = 'admin' OR u.role = 'sub_admin') AND t.fcm_token IS NOT NULL
         `);
 
         const tokens: string[] = result.rows.map((r: any) => r.fcm_token).filter(Boolean);

@@ -123,7 +123,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const getUsers = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
             return res.status(403).json({ message: "फक्त ॲडमिनला वापरकर्ते पाहण्याची परवानगी आहे" });
         }
 
@@ -144,7 +144,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
 
 export const createUser = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
             return res.status(403).json({ message: "फक्त ॲडमिनला नवीन युजर जोडण्याची परवानगी आहे" });
         }
 
@@ -202,7 +202,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
 export const deleteUser = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
             return res.status(403).json({ message: "फक्त ॲडमिनला युजर डिलीट करण्याची परवानगी आहे" });
         }
 

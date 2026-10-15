@@ -29,8 +29,8 @@ const getActiveFranchiseId = async (req: AuthRequest): Promise<number | null> =>
  */
 export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
-            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला पैशांचा व खतावणीचा हिशोब पाहण्याची परवानगी आहे." });
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला पैशांचा व खतावणीचा हिशोब पाहण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -100,8 +100,8 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
  */
 export const getLedgerTransactions = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
-            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी आहे." });
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -164,8 +164,8 @@ export const getLedgerTransactions = async (req: AuthRequest, res: Response) => 
 export const createLedgerTransaction = async (req: AuthRequest, res: Response) => {
     try {
         const user = req.user!;
-        if (user.role !== "admin") {
-            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला कॅश व्यवहार नोंदवण्याची परवानगी आहे." });
+        if (user.role !== "admin" && user.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला कॅश व्यवहार नोंदवण्याची परवानगी आहे." });
         }
 
         const franchiseId = await getActiveFranchiseId(req);
@@ -213,8 +213,8 @@ export const createLedgerTransaction = async (req: AuthRequest, res: Response) =
  */
 export const deleteLedgerTransaction = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
-            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला व्यवहार डिलीट करण्याची परवानगी आहे." });
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला व्यवहार डिलीट करण्याची परवानगी आहे." });
         }
 
         const { id } = req.params;

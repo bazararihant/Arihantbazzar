@@ -128,8 +128,8 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
         const conditions: string[] = [];
         const params: any[] = [];
 
-        // If not admin, strictly filter by their branch
-        if (user.role !== "admin") {
+        // If not admin/sub_admin, strictly filter by their branch
+        if (user.role !== "admin" && user.role !== "sub_admin") {
             params.push(user.franchise_id);
             conditions.push(`o.franchise_id = $${params.length}`);
         } else if (franchise_id) {
@@ -168,9 +168,9 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 
         const result = await pool.query(query, params);
 
-        // Only Admin can see bill amounts and bill images
+        // Only Admin / Sub-Admin can see bill amounts and bill images
         const sanitizedOrders = result.rows.map((row: any) => {
-            if (user.role !== "admin") {
+            if (user.role !== "admin" && user.role !== "sub_admin") {
                 return {
                     ...row,
                     bill_amount: null,
@@ -212,12 +212,12 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         const order = orderRes.rows[0];
 
         // Ensure branch users can only see their branch's order
-        if (user.role !== "admin" && order.franchise_id !== user.franchise_id) {
+        if (user.role !== "admin" && user.role !== "sub_admin" && order.franchise_id !== user.franchise_id) {
             return res.status(403).json({ message: "Forbidden" });
         }
 
-        // Hide bill information from all non-admin users (Manager, Worker, Franchise)
-        if (user.role !== "admin") {
+        // Hide bill information from non-admin / non-sub-admin users
+        if (user.role !== "admin" && user.role !== "sub_admin") {
             order.bill_amount = null;
             order.bill_image_url = null;
         }
@@ -629,8 +629,8 @@ export const deleteOrder = async (req: AuthRequest, res: Response) => {
 // 14. Monthly & Custom Date Range Expense Report
 export const getExpenseReport = async (req: AuthRequest, res: Response) => {
     try {
-        if (req.user?.role !== "admin") {
-            return res.status(403).json({ message: "केवळ मुख्य ॲडमिनला खर्चाचा हिशोब पाहण्याची परवानगी आहे." });
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला खर्चाचा हिशोब पाहण्याची परवानगी आहे." });
         }
 
         const { start_date, end_date, month, year } = req.query;

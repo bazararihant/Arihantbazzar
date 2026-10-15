@@ -91,7 +91,8 @@ export default function OrderHistoryScreen({
     initialTab = "orders",
 }: Props) {
     const insets = useSafeAreaInsets();
-    const [currentTab, setCurrentTab] = useState<MainTabType>(user.role === "admin" ? initialTab : "orders");
+    const isAdmin = user.role === "admin" || user.role === "sub_admin";
+    const [currentTab, setCurrentTab] = useState<MainTabType>(isAdmin ? initialTab : "orders");
 
     // ==================== ORDERS LIST STATE ====================
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -145,7 +146,7 @@ export default function OrderHistoryScreen({
 
     // Load Expense Report
     const loadExpenseReport = useCallback(async () => {
-        if (user.role !== "admin") {
+        if (!isAdmin) {
             setReportLoading(false);
             return;
         }
@@ -442,7 +443,7 @@ export default function OrderHistoryScreen({
                     </Text>
                 </TouchableOpacity>
 
-                {user.role === "admin" && (
+                {isAdmin && (
                     <TouchableOpacity
                         style={[styles.segmentBtn, currentTab === "report" && styles.segmentBtnActiveReport]}
                         onPress={() => setCurrentTab("report")}
@@ -587,7 +588,7 @@ export default function OrderHistoryScreen({
                             <Text style={styles.summaryLbl}>एकूण वस्तू</Text>
                         </View>
                         <View style={styles.summaryBox}>
-                            {user.role === "admin" ? (
+                            {isAdmin ? (
                                 <>
                                     <Text style={[styles.summaryNum, { color: "#2563EB" }]}>
                                         ₹{totalBillAmount.toLocaleString("en-IN")}
@@ -695,7 +696,7 @@ export default function OrderHistoryScreen({
                                             </Text>
                                         </View>
 
-                                        {user.role === "admin" && order.bill_amount ? (
+                                        {isAdmin && order.bill_amount ? (
                                             <View style={styles.orderInfoRow}>
                                                 <Text style={styles.orderInfoLabel}>💵 बिलाची रक्कम:</Text>
                                                 <Text style={[styles.orderInfoVal, { fontWeight: "800", color: "#16A34A" }]}>
