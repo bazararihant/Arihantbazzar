@@ -622,6 +622,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "flex-start",
+        gap: 8,
     },
     orderId: {
         fontSize: 15,
@@ -637,6 +638,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 12,
+        alignSelf: "flex-start",
     },
     statusBadgeText: {
         fontSize: 11,
@@ -656,6 +658,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        flexWrap: "wrap",
+        gap: 6,
     },
     itemsCount: {
         fontSize: 13,

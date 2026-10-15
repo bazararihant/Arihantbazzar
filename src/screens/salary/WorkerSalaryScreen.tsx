@@ -100,6 +100,16 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
     const [newWorkerDailyWage, setNewWorkerDailyWage] = useState("");
     const [savingWorker, setSavingWorker] = useState(false);
 
+    // Edit Worker Modal State
+    const [showEditWorkerModal, setShowEditWorkerModal] = useState(false);
+    const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+    const [editWorkerName, setEditWorkerName] = useState("");
+    const [editWorkerPhone, setEditWorkerPhone] = useState("");
+    const [editWorkerDesignation, setEditWorkerDesignation] = useState("कामगार");
+    const [editWorkerSalary, setEditWorkerSalary] = useState("");
+    const [editWorkerDailyWage, setEditWorkerDailyWage] = useState("");
+    const [savingEditWorker, setSavingEditWorker] = useState(false);
+
     // Advance Modal State
     const [showAdvanceModal, setShowAdvanceModal] = useState(false);
     const [selectedWorkerForAdvance, setSelectedWorkerForAdvance] = useState<Worker | null>(null);
@@ -301,18 +311,19 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
     const handleDeleteWorker = (worker: Worker) => {
         Alert.alert(
             "कामगार हटवा ⚠️",
-            `तुम्हाला '${worker.name}' या कामगाराचे रेकॉर्ड काढायचे आहे का?`,
+            `तुम्हाला '${worker.name}' या कामगाराचे सर्व रेकॉर्ड (हजेरी, उचल, पगार) कायमचे हटवायचे आहे का?`,
             [
                 { text: "रद्द करा", style: "cancel" },
                 {
-                    text: "हटवा",
+                    text: "होय, हटवा",
                     style: "destructive",
                     onPress: async () => {
                         try {
                             await api.delete(`/workers/${worker.id}`);
-                            Alert.alert("यशस्वी! ✅", "कामगार हटवला गेला.");
+                            Alert.alert("यशस्वी! ✅", `'${worker.name}' कामगार हटवला गेला.`);
                             loadWorkers();
                             if (activeTab === "attendance") loadAttendance(selectedDate);
+                            loadReport();
                         } catch (err: any) {
                             Alert.alert("त्रुटी", err?.response?.data?.message || "हटवता आले नाही");
                         }
@@ -320,6 +331,57 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                 },
             ]
         );
+    };
+
+    // Handle Open Edit Worker Modal
+    const handleOpenEditWorker = (w: Worker) => {
+        setEditingWorker(w);
+        setEditWorkerName(w.name || "");
+        setEditWorkerPhone(w.phone || "");
+        setEditWorkerDesignation(w.designation || "कामगार");
+        setEditWorkerSalary(String(w.monthly_salary || ""));
+        setEditWorkerDailyWage(String(w.daily_wage || ""));
+        setShowEditWorkerModal(true);
+    };
+
+    // Handle Save Edit Worker
+    const handleSaveEditWorker = async () => {
+        if (!editingWorker) return;
+        const cleanName = editWorkerName.trim();
+        if (!cleanName) {
+            Alert.alert("माहिती भरा", "कृपया कामगाराचे नाव टाका.");
+            return;
+        }
+
+        const mSalary = parseFloat(editWorkerSalary) || 0;
+        let dWage = parseFloat(editWorkerDailyWage) || 0;
+        if (dWage <= 0 && mSalary > 0) {
+            dWage = Math.round((mSalary / 30) * 100) / 100;
+        }
+
+        try {
+            setSavingEditWorker(true);
+            await api.put(`/workers/${editingWorker.id}`, {
+                name: cleanName,
+                phone: editWorkerPhone.trim() || null,
+                designation: editWorkerDesignation.trim() || "कामगार",
+                salary_type: "monthly",
+                monthly_salary: mSalary,
+                daily_wage: dWage,
+            });
+
+            Alert.alert("यशस्वी! ✅", `'${cleanName}' कामगाराची माहिती व पगार अपडेट केला गेला.`);
+            setShowEditWorkerModal(false);
+            setEditingWorker(null);
+            loadWorkers();
+            if (activeTab === "attendance") loadAttendance(selectedDate);
+            loadReport();
+        } catch (err: any) {
+            console.error("Failed to update worker:", err);
+            Alert.alert("त्रुटी", err?.response?.data?.message || "माहिती अपडेट करता आली नाही");
+        } finally {
+            setSavingEditWorker(false);
+        }
     };
 
     // Handle Add Advance
@@ -936,6 +998,12 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                 {workers.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>कोणतेही कामगार जोडलेले नाहीत.</Text>
+                        <TouchableOpacity
+                            style={styles.emptyAddBtn}
+                            onPress={() => setShowAddWorkerModal(true)}
+                        >
+                            <Text style={styles.emptyAddBtnText}>＋ पहिला कामगार जोडा</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <FlatList
@@ -944,21 +1012,29 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                         contentContainerStyle={{ padding: 12, paddingBottom: 60 }}
                         renderItem={({ item }) => (
                             <View style={styles.workerManageCard}>
-                                <View style={styles.workerManageLeft}>
+                                <View style={styles.workerManageTop}>
                                     <Text style={styles.workerManageName}>{item.name}</Text>
                                     <Text style={styles.workerManageRole}>
-                                        हुद्दा: {item.designation} • फोन: {item.phone || "-"}
+                                        हुद्दा: {item.designation} • 📱 फोन: {item.phone || "-"}
                                     </Text>
                                     <Text style={styles.workerManageSalary}>
-                                        मासिक पगार: ₹{parseFloat(String(item.monthly_salary)).toLocaleString("en-IN")} | रोजंदारी: ₹{item.daily_wage}/दिवस
+                                        💰 मासिक पगार: ₹{parseFloat(String(item.monthly_salary)).toLocaleString("en-IN")} | रोजंदारी: ₹{item.daily_wage}/दिवस
                                     </Text>
                                 </View>
-                                <TouchableOpacity
-                                    style={styles.deleteWorkerBtn}
-                                    onPress={() => handleDeleteWorker(item)}
-                                >
-                                    <Text style={styles.deleteWorkerBtnText}>🗑️</Text>
-                                </TouchableOpacity>
+                                <View style={styles.workerManageActions}>
+                                    <TouchableOpacity
+                                        style={styles.editWorkerBtn}
+                                        onPress={() => handleOpenEditWorker(item)}
+                                    >
+                                        <Text style={styles.editWorkerBtnText}>✏️ एडिट / पगार वाढवा</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.deleteWorkerBtn}
+                                        onPress={() => handleDeleteWorker(item)}
+                                    >
+                                        <Text style={styles.deleteWorkerBtnText}>🗑️ हटवा</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         )}
                     />
@@ -1127,6 +1203,97 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.modalSubmitBtnText}>✅ कामगार जतन करा</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* 1B. EDIT WORKER & SALARY MODAL */}
+            <Modal
+                visible={showEditWorkerModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowEditWorkerModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>कामगार माहिती व पगार बदला</Text>
+                            <TouchableOpacity onPress={() => setShowEditWorkerModal(false)}>
+                                <Text style={styles.modalCloseText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.inputLabel}>कामगाराचे पूर्ण नाव *</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="उदा. सचिन पवार"
+                            placeholderTextColor="#94A3B8"
+                            value={editWorkerName}
+                            onChangeText={setEditWorkerName}
+                        />
+
+                        <Text style={styles.inputLabel}>मोबाईल नंबर</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="उदा. 9822114455"
+                            placeholderTextColor="#94A3B8"
+                            value={editWorkerPhone}
+                            onChangeText={setEditWorkerPhone}
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                        />
+
+                        <Text style={styles.inputLabel}>हुद्दा / कामाचे स्वरूप</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="उदा. पॅकर, लोडर, मदतनीस"
+                            placeholderTextColor="#94A3B8"
+                            value={editWorkerDesignation}
+                            onChangeText={setEditWorkerDesignation}
+                        />
+
+                        <View style={{ flexDirection: "row", gap: 10 }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.inputLabel}>मासिक पगार (₹) *</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="उदा. 15000"
+                                    placeholderTextColor="#94A3B8"
+                                    value={editWorkerSalary}
+                                    onChangeText={(val) => {
+                                        setEditWorkerSalary(val);
+                                        const num = parseFloat(val);
+                                        if (num > 0) {
+                                            setEditWorkerDailyWage(String(Math.round(num / 30)));
+                                        }
+                                    }}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.inputLabel}>रोजंदारी दर (₹/दिवस)</Text>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="उदा. 500"
+                                    placeholderTextColor="#94A3B8"
+                                    value={editWorkerDailyWage}
+                                    onChangeText={setEditWorkerDailyWage}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.modalSubmitBtn, { backgroundColor: "#2563EB" }, savingEditWorker && { opacity: 0.6 }]}
+                            onPress={handleSaveEditWorker}
+                            disabled={savingEditWorker}
+                        >
+                            {savingEditWorker ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.modalSubmitBtnText}>💾 बदल सेव्ह करा</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -1460,17 +1627,20 @@ const styles = StyleSheet.create({
     },
     statusChip: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 4,
         borderRadius: 8,
         backgroundColor: "#F1F5F9",
         alignItems: "center",
+        justifyContent: "center",
         borderWidth: 1,
         borderColor: "#E2E8F0",
     },
     statusChipText: {
-        fontSize: 12,
-        fontWeight: "600",
+        fontSize: 11,
+        fontWeight: "700",
         color: "#475569",
+        textAlign: "center",
     },
     chipFullActive: {
         backgroundColor: "#DCFCE7",
@@ -1605,6 +1775,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        flexWrap: "wrap",
+        gap: 8,
         borderWidth: 1,
         borderRadius: 8,
         padding: 10,
@@ -1888,17 +2060,14 @@ const styles = StyleSheet.create({
     },
     workerManageCard: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 8,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: "#E2E8F0",
     },
-    workerManageLeft: {
-        flex: 1,
+    workerManageTop: {
+        marginBottom: 10,
     },
     workerManageName: {
         fontSize: 16,
@@ -1911,16 +2080,45 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     workerManageSalary: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: "700",
         color: "#16A34A",
         marginTop: 4,
     },
+    workerManageActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 8,
+        borderTopWidth: 1,
+        borderTopColor: "#F1F5F9",
+        paddingTop: 10,
+    },
+    editWorkerBtn: {
+        backgroundColor: "#EFF6FF",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "#BFDBFE",
+    },
+    editWorkerBtnText: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#2563EB",
+    },
     deleteWorkerBtn: {
-        padding: 8,
+        backgroundColor: "#FEE2E2",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "#FECACA",
     },
     deleteWorkerBtnText: {
-        fontSize: 18,
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#DC2626",
     },
     emptyContainer: {
         padding: 40,

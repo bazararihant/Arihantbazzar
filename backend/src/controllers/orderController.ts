@@ -12,13 +12,11 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         const { items, notes, franchise_id } = req.body;
         const user = req.user!;
 
-        // Determine franchise_id: franchise user uses their own; admin can specify
-        const targetFranchiseId = user.role === "admin" ? (franchise_id || user.franchise_id) : user.franchise_id;
-
+        // Determine franchise_id: franchise/sub_admin uses their own, or fallback to first franchise
+        let targetFranchiseId = franchise_id || user.franchise_id;
         if (!targetFranchiseId) {
-            return res.status(400).json({
-                message: "Franchise ID is required to place an order",
-            });
+            const fRes = await pool.query("SELECT id FROM franchises ORDER BY id ASC LIMIT 1");
+            targetFranchiseId = fRes.rows[0]?.id || 1;
         }
 
         if (!items || !Array.isArray(items) || items.length === 0) {

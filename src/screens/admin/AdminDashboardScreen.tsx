@@ -17,6 +17,7 @@ import UserManagementModal from "./UserManagementModal";
 interface Props {
     user: UserSession;
     onLogout: () => void;
+    onCreateOrder?: () => void;
     onViewOrder: (orderId: number) => void;
     onViewHistory: (tab?: "orders" | "report") => void;
     onViewLedger: () => void;
@@ -50,6 +51,7 @@ interface Franchise {
 export default function AdminDashboardScreen({
     user,
     onLogout,
+    onCreateOrder,
     onViewOrder,
     onViewHistory,
     onViewLedger,
@@ -221,6 +223,30 @@ export default function AdminDashboardScreen({
                 }
                 showsVerticalScrollIndicator={false}
             >
+                {/* BIG ACTION BUTTON TO CREATE NEW ORDER (ADMIN / SUB-ADMIN) */}
+                {onCreateOrder && (
+                    <TouchableOpacity
+                        style={styles.createOrderBtn}
+                        onPress={onCreateOrder}
+                        activeOpacity={0.88}
+                    >
+                        <View style={styles.createBtnContent}>
+                            <View style={styles.plusCircle}>
+                                <Text style={styles.plusIcon}>＋</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.createBtnTitle}>
+                                    नवीन सामानाची लिस्ट पाठवा / ऑर्डर टाका
+                                </Text>
+                                <Text style={styles.createBtnSubtitle}>
+                                    Daily Material Indent / सामानाची नवीन मागणी नोंदवा
+                                </Text>
+                            </View>
+                            <Text style={styles.createBtnArrow}>➔</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 {/* BIG PROMINENT HISTORY NAVIGATION CARD */}
                 <TouchableOpacity
                     style={styles.historyActionCard}
@@ -454,7 +480,7 @@ export default function AdminDashboardScreen({
                                 activeOpacity={0.85}
                             >
                                 <View style={styles.cardHeaderRow}>
-                                    <View style={{ flex: 1 }}>
+                                    <View style={{ flex: 1, marginRight: 8 }}>
                                         <View style={styles.branchTag}>
                                             <Text style={styles.branchTagText}>
                                                 🏢 {item.franchise_name || "भिलवडी शाखा"}
@@ -547,11 +573,14 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginTop: 4,
         alignSelf: "flex-start",
+        maxWidth: "100%",
+        flexShrink: 1,
     },
     orderCreatorText: {
         fontSize: 12,
         color: "#334155",
         fontWeight: "600",
+        flexWrap: "wrap",
     },
     container: {
         flex: 1,
@@ -930,6 +959,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        flexWrap: "wrap",
+        gap: 6,
     },
     itemsBadge: {
         fontSize: 13,
@@ -1002,12 +1033,14 @@ const styles = StyleSheet.create({
     ledgerBadgeRow: {
         flexDirection: "row",
         alignItems: "center",
+        flexWrap: "wrap",
         gap: 6,
     },
     ledgerActionTitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "800",
         color: "#FFFFFF",
+        flexShrink: 1,
     },
     newBadge: {
         backgroundColor: "#16A34A",
@@ -1029,6 +1062,51 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "800",
         color: "#38BDF8",
+        marginLeft: 8,
+    },
+    createOrderBtn: {
+        backgroundColor: "#16A34A",
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 14,
+        shadowColor: "#16A34A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    createBtnContent: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    plusCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 12,
+    },
+    plusIcon: {
+        fontSize: 24,
+        color: "#FFFFFF",
+        fontWeight: "800",
+    },
+    createBtnTitle: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#FFFFFF",
+    },
+    createBtnSubtitle: {
+        fontSize: 11,
+        color: "#DCFCE7",
+        marginTop: 2,
+    },
+    createBtnArrow: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#FFFFFF",
         marginLeft: 8,
     },
 });

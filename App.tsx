@@ -159,11 +159,17 @@ export default function App() {
             return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
         }
 
-        // 2. Create Order Screen (Franchise)
+        // 2. Create Order Screen (Franchise & Admin)
         if (currentScreen === "create_order") {
             return (
                 <CreateOrderScreen
-                    onBack={() => setCurrentScreen("branch_dashboard")}
+                    onBack={() => {
+                        if (user?.role === "admin" || user?.role === "sub_admin") {
+                            setCurrentScreen("admin_dashboard");
+                        } else {
+                            setCurrentScreen("branch_dashboard");
+                        }
+                    }}
                     onOrderCreated={(newOrderId) => {
                         setSelectedOrderId(newOrderId);
                         setCurrentScreen("order_detail");
@@ -221,6 +227,7 @@ export default function App() {
                 <AdminDashboardScreen
                     user={user}
                     onLogout={handleLogout}
+                    onCreateOrder={() => setCurrentScreen("create_order")}
                     onViewOrder={handleViewOrder}
                     onViewHistory={handleViewHistory}
                     onViewLedger={handleViewLedger}

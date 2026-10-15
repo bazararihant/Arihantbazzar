@@ -125,7 +125,7 @@ export const updateWorker = async (req: AuthRequest, res: Response) => {
 export const deleteWorker = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await pool.query("UPDATE workers SET is_active = false WHERE id = $1", [id]);
+    await pool.query("DELETE FROM workers WHERE id = $1", [id]);
     res.json({ message: "कामगार यशस्वीरित्या हटवला गेला" });
   } catch (error: any) {
     console.error("Error deleting worker:", error);
