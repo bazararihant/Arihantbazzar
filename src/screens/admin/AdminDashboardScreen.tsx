@@ -12,6 +12,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
 import { clearAuthData, UserSession } from "../../services/storage";
+import UserManagementModal from "./UserManagementModal";
 
 interface Props {
     user: UserSession;
@@ -19,6 +20,7 @@ interface Props {
     onViewOrder: (orderId: number) => void;
     onViewHistory: (tab?: "orders" | "report") => void;
     onViewLedger: () => void;
+    onViewSalary: () => void;
 }
 
 interface OrderItem {
@@ -34,6 +36,7 @@ interface OrderItem {
     franchise_name: string;
     franchise_code: string;
     user_name: string;
+    user_role?: string;
 }
 
 interface Franchise {
@@ -50,6 +53,7 @@ export default function AdminDashboardScreen({
     onViewOrder,
     onViewHistory,
     onViewLedger,
+    onViewSalary,
 }: Props) {
     const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -57,6 +61,7 @@ export default function AdminDashboardScreen({
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showUserModal, setShowUserModal] = useState(false);
 
     const loadData = useCallback(async () => {
         try {
@@ -234,6 +239,60 @@ export default function AdminDashboardScreen({
                     </View>
                 </TouchableOpacity>
 
+                {/* USER MANAGEMENT & ROLE ACCESS BUTTON */}
+                <TouchableOpacity
+                    style={styles.userManagementBtn}
+                    onPress={() => setShowUserModal(true)}
+                    activeOpacity={0.88}
+                >
+                    <View style={styles.ledgerActionContent}>
+                        <View style={[styles.ledgerIconCircle, { backgroundColor: "#EFF6FF" }]}>
+                            <Text style={styles.ledgerIconText}>👥</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <View style={styles.ledgerBadgeRow}>
+                                <Text style={styles.ledgerActionTitle}>
+                                    युजर व्यवस्थापन (User Management)
+                                </Text>
+                                <View style={[styles.newBadge, { backgroundColor: "#2563EB" }]}>
+                                    <Text style={styles.newBadgeText}>ॲक्सेस</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.ledgerActionSub}>
+                                नवीन शाखा मॅनेजर जोडा, पासवर्ड सेट करा आणि खाती व्यवस्थापित करा
+                            </Text>
+                        </View>
+                        <Text style={styles.ledgerActionArrow}>➔</Text>
+                    </View>
+                </TouchableOpacity>
+
+                {/* WORKER ATTENDANCE & SALARY MANAGEMENT CARD */}
+                <TouchableOpacity
+                    style={styles.salaryActionCard}
+                    onPress={onViewSalary}
+                    activeOpacity={0.88}
+                >
+                    <View style={styles.ledgerActionContent}>
+                        <View style={[styles.ledgerIconCircle, { backgroundColor: "#DCFCE7" }]}>
+                            <Text style={styles.ledgerIconText}>👷</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <View style={styles.ledgerBadgeRow}>
+                                <Text style={styles.ledgerActionTitle}>
+                                    कामगार हजेरी व पगार (Worker Attendance & Salary)
+                                </Text>
+                                <View style={[styles.newBadge, { backgroundColor: "#16A34A" }]}>
+                                    <Text style={styles.newBadgeText}>हजेरी / उचल</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.ledgerActionSub}>
+                                रोजची हजेरी (पूर्ण/अर्धा दिवस), पगार, उचल/ॲडव्हान्स ट्रॅकिंग, मासिक व कस्टम अहवाल
+                            </Text>
+                        </View>
+                        <Text style={styles.ledgerActionArrow}>➔</Text>
+                    </View>
+                </TouchableOpacity>
+
                 {/* CASH LEDGER & BROTHER SETTLEMENT CARD */}
                 <TouchableOpacity
                     style={styles.ledgerActionCard}
@@ -404,8 +463,13 @@ export default function AdminDashboardScreen({
                                             📅 आज, {new Date(item.created_at).toLocaleTimeString("mr-IN", {
                                                 hour: "2-digit",
                                                 minute: "2-digit",
-                                            })} • व्यवस्थापक: {item.user_name || "भिलवडी मॅनेजर"}
+                                            })}
                                         </Text>
+                                        <View style={styles.orderCreatorBadge}>
+                                            <Text style={styles.orderCreatorText}>
+                                                👤 ऑर्डर नोंदवली: <Text style={{ fontWeight: "800", color: "#1D4ED8" }}>{item.user_name || "माहिती नाही"}</Text> {item.user_role === "worker" ? "👷‍♂️ (कामगार)" : item.user_role === "sub_admin" ? "🏢 (सब-ॲडमिन)" : item.user_role === "admin" ? "👑 (ॲडमिन)" : ""}
+                                            </Text>
+                                        </View>
                                     </View>
 
                                     <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
@@ -453,11 +517,38 @@ export default function AdminDashboardScreen({
                     })
                 )}
             </ScrollView>
+
+            <UserManagementModal
+                visible={showUserModal}
+                onClose={() => setShowUserModal(false)}
+            />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    userManagementBtn: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1.5,
+        borderColor: "#93C5FD",
+        elevation: 2,
+    },
+    orderCreatorBadge: {
+        backgroundColor: "#F1F5F9",
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        marginTop: 4,
+        alignSelf: "flex-start",
+    },
+    orderCreatorText: {
+        fontSize: 12,
+        color: "#334155",
+        fontWeight: "600",
+    },
     container: {
         flex: 1,
         backgroundColor: "#F8FAFC",
@@ -861,6 +952,19 @@ const styles = StyleSheet.create({
     },
     billTextPending: {
         color: "#D97706",
+    },
+    salaryActionCard: {
+        backgroundColor: "#064E3B",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1.5,
+        borderColor: "#34D399",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
     },
     ledgerActionCard: {
         backgroundColor: "#0F172A",

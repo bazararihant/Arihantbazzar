@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { pool } from "../config/db";
 import { AuthRequest } from "../middleware/authMiddleware";
-import { sendPushNotificationToAdmins } from "../services/notificationService";
+import { sendPushNotificationToAdmins, sendPushNotificationToFranchise } from "../services/notificationService";
 
 
 // 1. Create a new material order with items
@@ -117,7 +117,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
             SELECT o.id, o.franchise_id, o.order_date, o.status, o.notes,
                    o.bill_image_url, o.bill_amount, o.created_at, o.updated_at,
                    f.name as franchise_name, f.code as franchise_code,
-                   u.name as user_name,
+                   u.name as user_name, u.role as user_role,
                    COUNT(oi.id)::int as total_items
             FROM material_orders o
             JOIN franchises f ON o.franchise_id = f.id
@@ -128,8 +128,8 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
         const conditions: string[] = [];
         const params: any[] = [];
 
-        // If franchise user, strictly filter by their branch
-        if (user.role === "franchise") {
+        // If not admin, strictly filter by their branch
+        if (user.role !== "admin") {
             params.push(user.franchise_id);
             conditions.push(`o.franchise_id = $${params.length}`);
         } else if (franchise_id) {
@@ -167,7 +167,20 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
         query += ` GROUP BY o.id, f.id, u.id ORDER BY o.created_at DESC`;
 
         const result = await pool.query(query, params);
-        return res.json({ orders: result.rows });
+
+        // Workers should not see bill amounts
+        const sanitizedOrders = result.rows.map((row: any) => {
+            if (user.role === "worker") {
+                return {
+                    ...row,
+                    bill_amount: null,
+                    bill_image_url: null,
+                };
+            }
+            return row;
+        });
+
+        return res.json({ orders: sanitizedOrders });
     } catch (error) {
         console.error("Get orders error:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -181,10 +194,10 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         const user = req.user!;
 
         const orderRes = await pool.query(
-            `SELECT o.id, o.franchise_id, o.order_date, o.status, o.notes,
+            `SELECT o.id, o.franchise_id, o.user_id, o.order_date, o.status, o.notes,
                     o.bill_image_url, o.bill_amount, o.created_at, o.updated_at,
                     f.name as franchise_name, f.code as franchise_code, f.address as franchise_address,
-                    u.name as user_name, u.email as user_email
+                    u.name as user_name, u.role as user_role, u.phone as user_phone, u.email as user_email
              FROM material_orders o
              JOIN franchises f ON o.franchise_id = f.id
              JOIN users u ON o.user_id = u.id
@@ -198,9 +211,15 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 
         const order = orderRes.rows[0];
 
-        // Ensure franchise user can only see their branch's order
-        if (user.role === "franchise" && order.franchise_id !== user.franchise_id) {
+        // Ensure branch users can only see their branch's order
+        if (user.role !== "admin" && order.franchise_id !== user.franchise_id) {
             return res.status(403).json({ message: "Forbidden" });
+        }
+
+        // Hide bill information from workers
+        if (user.role === "worker") {
+            order.bill_amount = null;
+            order.bill_image_url = null;
         }
 
         const itemsRes = await pool.query(
@@ -282,7 +301,7 @@ export const uploadBill = async (req: AuthRequest, res: Response) => {
                  bill_amount = COALESCE($2, bill_amount),
                  updated_at = NOW()
              WHERE id = $3
-             RETURNING id, bill_image_url, bill_amount, status, updated_at`,
+             RETURNING id, franchise_id, bill_image_url, bill_amount, status, updated_at`,
             [billImageUrl, bill_amount ? Number(bill_amount) : null, id]
         );
 
@@ -290,9 +309,22 @@ export const uploadBill = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        const updatedOrder = result.rows[0];
+
+        // Notify franchise that bill has been uploaded
+        if (updatedOrder.franchise_id) {
+            const billText = updatedOrder.bill_amount ? ` (रक्कम: ₹${updatedOrder.bill_amount})` : "";
+            sendPushNotificationToFranchise(updatedOrder.franchise_id, {
+                title: "📄 बिल अपलोड झाले आहे",
+                body: `तुमच्या ऑर्डर #${id} चे बिल${billText} ॲडमिनने अपलोड केले आहे.`,
+                orderId: Number(id),
+                type: "BILL_UPLOADED",
+            }).catch((err) => console.error("Franchise bill notification error:", err));
+        }
+
         return res.json({
             message: "Bill uploaded successfully",
-            order: result.rows[0],
+            order: updatedOrder,
         });
     } catch (error) {
         console.error("Upload bill error:", error);
@@ -317,7 +349,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             `UPDATE material_orders
              SET status = $1, updated_at = NOW()
              WHERE id = $2
-             RETURNING id, status, updated_at`,
+             RETURNING id, franchise_id, status, updated_at`,
             [status, id]
         );
 
@@ -325,9 +357,29 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        const updatedOrder = result.rows[0];
+
+        // Notify franchise when status changes
+        if (updatedOrder.franchise_id) {
+            const statusLabels: Record<string, string> = {
+                approved: "मंजूर करण्यात आली आहे ✅",
+                dispatched: "पाठवण्यात आली आहे (Dispatched) 🚚",
+                delivered: "वितरित झाली आहे (Delivered) 🎉",
+                rejected: "नाकारण्यात आली आहे ❌",
+                pending: "प्रलंबित आहे ⏳",
+            };
+            const label = statusLabels[status] || status;
+            sendPushNotificationToFranchise(updatedOrder.franchise_id, {
+                title: "📦 ऑर्डर स्टेटस अपडेट",
+                body: `तुमची ऑर्डर #${id} ${label}`,
+                orderId: Number(id),
+                type: "ORDER_STATUS_UPDATE",
+            }).catch((err) => console.error("Franchise status notification error:", err));
+        }
+
         return res.json({
             message: `Order status updated to ${status}`,
-            order: result.rows[0],
+            order: updatedOrder,
         });
     } catch (error) {
         console.error("Update status error:", error);

@@ -8,6 +8,7 @@ import OrderDetailScreen from "./src/screens/orders/OrderDetailScreen";
 import OrderHistoryScreen from "./src/screens/orders/OrderHistoryScreen";
 import AdminDashboardScreen from "./src/screens/admin/AdminDashboardScreen";
 import CashLedgerScreen from "./src/screens/ledger/CashLedgerScreen";
+import WorkerSalaryScreen from "./src/screens/salary/WorkerSalaryScreen";
 import { getUser, UserSession } from "./src/services/storage";
 import { registerDeviceToken, setupNotificationListeners } from "./src/services/notificationService";
 
@@ -18,7 +19,8 @@ type ScreenType =
     | "order_detail"
     | "admin_dashboard"
     | "order_history"
-    | "cash_ledger";
+    | "cash_ledger"
+    | "worker_salary";
 
 export default function App() {
     const [user, setUser] = useState<UserSession | null>(null);
@@ -124,6 +126,18 @@ export default function App() {
         }
     };
 
+    const handleViewSalary = () => {
+        setCurrentScreen("worker_salary");
+    };
+
+    const handleBackFromSalary = () => {
+        if (user?.role === "admin") {
+            setCurrentScreen("admin_dashboard");
+        } else {
+            setCurrentScreen("branch_dashboard");
+        }
+    };
+
     const renderContent = () => {
         if (initializing) {
             return (
@@ -191,7 +205,17 @@ export default function App() {
             );
         }
 
-        // 6. Admin Dashboard (Strictly Today's Orders Details)
+        // 6. Worker Attendance & Salary Management Screen
+        if (currentScreen === "worker_salary") {
+            return (
+                <WorkerSalaryScreen
+                    currentUser={user}
+                    onBack={handleBackFromSalary}
+                />
+            );
+        }
+
+        // 7. Admin Dashboard (Strictly Today's Orders Details)
         if (currentScreen === "admin_dashboard" && user.role === "admin") {
             return (
                 <AdminDashboardScreen
@@ -200,11 +224,12 @@ export default function App() {
                     onViewOrder={handleViewOrder}
                     onViewHistory={handleViewHistory}
                     onViewLedger={handleViewLedger}
+                    onViewSalary={handleViewSalary}
                 />
             );
         }
 
-        // 7. Default: Branch Dashboard
+        // 8. Default: Branch Dashboard
         return (
             <BranchDashboardScreen
                 user={user}
@@ -213,6 +238,7 @@ export default function App() {
                 onViewOrder={handleViewOrder}
                 onViewHistory={handleViewHistory}
                 onViewLedger={handleViewLedger}
+                onViewSalary={handleViewSalary}
             />
         );
     };

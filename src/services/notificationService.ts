@@ -18,9 +18,21 @@ import api from "./api";
 export async function requestNotificationPermission(): Promise<boolean> {
     try {
         if (Platform.OS === "android") {
-            if (Platform.Version >= 33) {
-                const granted = await PermissionsAndroid.request(
+            const apiLevel = typeof Platform.Version === "number" ? Platform.Version : parseInt(String(Platform.Version), 10);
+            if (apiLevel >= 33) {
+                const alreadyGranted = await PermissionsAndroid.check(
                     PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+                );
+                if (alreadyGranted) return true;
+
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+                    {
+                        title: "सूचना परवानगी (Notification Permission)",
+                        message: "नवीन ऑर्डर्स आणि स्टेटस अपडेट्स वेळेवर मिळवण्यासाठी परवानगी द्या.",
+                        buttonPositive: "परवानगी द्या",
+                        buttonNegative: "रद्द करा",
+                    }
                 );
                 return granted === PermissionsAndroid.RESULTS.GRANTED;
             }

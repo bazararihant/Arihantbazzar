@@ -6,8 +6,10 @@ const USER_KEY = "mart_auth_user";
 export interface UserSession {
     id: number;
     name: string;
+    username?: string | null;
+    phone?: string | null;
     email: string;
-    role: "admin" | "franchise";
+    role: "admin" | "sub_admin" | "worker" | "franchise";
     franchise_id?: number | null;
     franchise_name?: string | null;
     franchise_code?: string | null;

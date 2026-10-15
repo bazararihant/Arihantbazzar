@@ -10,6 +10,7 @@ import { initializeDatabase } from "./config/initDb";
 import authRoutes from "./routes/authRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import ledgerRoutes from "./routes/ledgerRoutes";
+import salaryRoutes from "./routes/salaryRoutes";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/ledger", ledgerRoutes);
+app.use("/api/workers", salaryRoutes);
 
 // Keep-Alive Ping Route (Keeps Render and Supabase alive 24/7)
 app.get("/api/ping", async (req, res) => {

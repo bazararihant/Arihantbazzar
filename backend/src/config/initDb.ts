@@ -88,6 +88,73 @@ export const initializeDatabase = async () => {
       );
     `);
 
+    // 7. Create Workers Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS workers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        phone VARCHAR(50),
+        designation VARCHAR(100) DEFAULT 'कामगार',
+        salary_type VARCHAR(20) DEFAULT 'monthly',
+        monthly_salary NUMERIC(10, 2) DEFAULT 0,
+        daily_wage NUMERIC(10, 2) DEFAULT 0,
+        joining_date DATE DEFAULT CURRENT_DATE,
+        is_active BOOLEAN DEFAULT TRUE,
+        notes TEXT,
+        franchise_id INT REFERENCES franchises(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 8. Create Worker Attendance Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS worker_attendance (
+        id SERIAL PRIMARY KEY,
+        worker_id INT NOT NULL REFERENCES workers(id) ON DELETE CASCADE,
+        attendance_date DATE NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        multiplier NUMERIC(3, 2) NOT NULL DEFAULT 1.0,
+        notes TEXT,
+        recorded_by_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_worker_attendance UNIQUE (worker_id, attendance_date)
+      );
+    `);
+
+    // 9. Create Worker Advances Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS worker_advances (
+        id SERIAL PRIMARY KEY,
+        worker_id INT NOT NULL REFERENCES workers(id) ON DELETE CASCADE,
+        amount NUMERIC(10, 2) NOT NULL,
+        advance_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        payment_mode VARCHAR(50) DEFAULT 'cash',
+        notes TEXT,
+        recorded_by_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 10. Create Worker Salary Settlements Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS worker_salary_settlements (
+        id SERIAL PRIMARY KEY,
+        worker_id INT NOT NULL REFERENCES workers(id) ON DELETE CASCADE,
+        month_year VARCHAR(7) NOT NULL,
+        total_days NUMERIC(5, 1) NOT NULL,
+        base_salary NUMERIC(10, 2) NOT NULL,
+        earned_salary NUMERIC(10, 2) NOT NULL,
+        advance_deducted NUMERIC(10, 2) NOT NULL DEFAULT 0,
+        net_paid_amount NUMERIC(10, 2) NOT NULL,
+        payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        payment_mode VARCHAR(50) DEFAULT 'cash',
+        notes TEXT,
+        recorded_by_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log("Database tables verified / created successfully.");
 
     // 5. Seed Franchises if none exist - Single Branch: Bhilwadi, Sangli

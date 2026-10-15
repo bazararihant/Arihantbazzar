@@ -20,6 +20,7 @@ interface Props {
     onViewOrder: (orderId: number) => void;
     onViewHistory?: () => void;
     onViewLedger?: () => void;
+    onViewSalary?: () => void;
 }
 
 interface OrderItem {
@@ -34,6 +35,8 @@ interface OrderItem {
     total_items: number;
     franchise_name: string;
     franchise_code: string;
+    user_name?: string;
+    user_role?: string;
 }
 
 export default function BranchDashboardScreen({
@@ -43,6 +46,7 @@ export default function BranchDashboardScreen({
     onViewOrder,
     onViewHistory,
     onViewLedger,
+    onViewSalary,
 }: Props) {
     const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -136,10 +140,16 @@ export default function BranchDashboardScreen({
                     <Text style={styles.branchTitle}>
                         {user.franchise_name || "अरिहंत बाजार (भिलवडी, सांगली)"}
                     </Text>
-                    <Text style={styles.userRole}>शाखा व्यवस्थापक (Branch Manager)</Text>
+                    <Text style={styles.userRole}>
+                        {user.role === "worker"
+                            ? `👷‍♂️ ${user.name} (कामगार - फक्त ऑर्डर नोंदणी)`
+                            : user.role === "sub_admin"
+                            ? `🏢 ${user.name} (सब-ॲडमिन / व्यवस्थापक)`
+                            : `🏢 ${user.name} (शाखा व्यवस्थापक)`}
+                    </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    {onViewHistory && (
+                    {user.role !== "worker" && onViewHistory && (
                         <TouchableOpacity
                             style={{
                                 backgroundColor: "#EFF6FF",
@@ -190,27 +200,53 @@ export default function BranchDashboardScreen({
                     </View>
                 </TouchableOpacity>
 
-                {/* Cash Ledger Action Button */}
-                <TouchableOpacity
-                    style={styles.ledgerBtn}
-                    onPress={onViewLedger}
-                    activeOpacity={0.85}
-                >
-                    <View style={styles.createBtnContent}>
-                        <View style={styles.moneyCircle}>
-                            <Text style={styles.moneyIcon}>💰</Text>
+                {/* Cash Ledger Action Button - Hidden for Workers */}
+                {user.role !== "worker" && onViewLedger && (
+                    <TouchableOpacity
+                        style={styles.ledgerBtn}
+                        onPress={onViewLedger}
+                        activeOpacity={0.85}
+                    >
+                        <View style={styles.createBtnContent}>
+                            <View style={styles.moneyCircle}>
+                                <Text style={styles.moneyIcon}>💰</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.ledgerBtnTitle}>
+                                    रोख जमा-खर्च हिशोब (Cash Ledger)
+                                </Text>
+                                <Text style={styles.ledgerBtnSubtitle}>
+                                    ॲडमिनसोबतचा पैशांची देवाणघेवाण व बाकी हिशोब पहा
+                                </Text>
+                            </View>
+                            <Text style={styles.ledgerBtnArrow}>➔</Text>
                         </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.ledgerBtnTitle}>
-                                रोख जमा-खर्च हिशोब (Cash Ledger)
-                            </Text>
-                            <Text style={styles.ledgerBtnSubtitle}>
-                                ॲडमिनसोबतचा पैशांची देवाणघेवाण व बाकी हिशोब पहा
-                            </Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Worker Attendance & Salary Button - for Sub-Admin / Manager */}
+                {user.role !== "worker" && onViewSalary && (
+                    <TouchableOpacity
+                        style={styles.salaryBtn}
+                        onPress={onViewSalary}
+                        activeOpacity={0.85}
+                    >
+                        <View style={styles.createBtnContent}>
+                            <View style={[styles.moneyCircle, { backgroundColor: "#DCFCE7" }]}>
+                                <Text style={styles.moneyIcon}>👷</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.salaryBtnTitle}>
+                                    कामगार हजेरी व पगार (Worker Attendance & Salary)
+                                </Text>
+                                <Text style={styles.salaryBtnSubtitle}>
+                                    दैनिक हजेरी (पूर्ण/अर्धा दिवस), उचल/ॲडव्हान्स व मासिक पगार हिशोब
+                                </Text>
+                            </View>
+                            <Text style={styles.salaryBtnArrow}>➔</Text>
                         </View>
-                        <Text style={styles.ledgerBtnArrow}>➔</Text>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                )}
 
                 {/* Status Overview Grid */}
                 <Text style={styles.sectionHeader}>आजची स्थिती (Order Status)</Text>
@@ -338,30 +374,39 @@ export default function BranchDashboardScreen({
                                 <View style={styles.cardDivider} />
 
                                 <View style={styles.orderCardBottom}>
-                                    <Text style={styles.itemsCount}>
-                                        🛒 {item.total_items} सामानाचे आयटम
-                                    </Text>
+                                    <View>
+                                        <Text style={styles.itemsCount}>
+                                            🛒 {item.total_items} सामानाचे आयटम
+                                        </Text>
+                                        {item.user_name ? (
+                                            <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                                                👤 नोंदवले: {item.user_name}
+                                            </Text>
+                                        ) : null}
+                                    </View>
 
-                                    {/* Bill Status Indicator */}
-                                    <View
-                                        style={[
-                                            styles.billBadge,
-                                            hasBill
-                                                ? styles.billBadgeUploaded
-                                                : styles.billBadgePending,
-                                        ]}
-                                    >
-                                        <Text
+                                    {/* Bill Status Indicator - Hidden for workers */}
+                                    {user.role !== "worker" && (
+                                        <View
                                             style={[
-                                                styles.billBadgeText,
+                                                styles.billBadge,
                                                 hasBill
-                                                    ? styles.billBadgeTextUploaded
-                                                    : styles.billBadgeTextPending,
+                                                    ? styles.billBadgeUploaded
+                                                    : styles.billBadgePending,
                                             ]}
                                         >
-                                            {hasBill ? "बिल जोडले ✅" : "बिल बाकी 📷"}
-                                        </Text>
-                                    </View>
+                                            <Text
+                                                style={[
+                                                    styles.billBadgeText,
+                                                    hasBill
+                                                        ? styles.billBadgeTextUploaded
+                                                        : styles.billBadgeTextPending,
+                                                ]}
+                                            >
+                                                {hasBill ? "बिल जोडले ✅" : "बिल बाकी 📷"}
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             </TouchableOpacity>
                         );
@@ -701,6 +746,35 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "800",
         color: "#38BDF8",
+        marginLeft: 8,
+    },
+    salaryBtn: {
+        backgroundColor: "#064E3B",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 20,
+        borderWidth: 1.5,
+        borderColor: "#34D399",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    salaryBtnTitle: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#FFFFFF",
+    },
+    salaryBtnSubtitle: {
+        fontSize: 11,
+        color: "#A7F3D0",
+        marginTop: 2,
+    },
+    salaryBtnArrow: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#34D399",
         marginLeft: 8,
     },
 });

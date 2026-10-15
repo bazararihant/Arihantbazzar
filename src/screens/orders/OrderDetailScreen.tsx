@@ -46,6 +46,7 @@ interface OrderDetail {
     franchise_code: string;
     franchise_address: string;
     user_name: string;
+    user_role?: string;
     items: OrderItem[];
 }
 
@@ -577,6 +578,12 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                         })}
                     </Text>
 
+                    <View style={{ backgroundColor: "#F0FDF4", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginTop: 6, borderWidth: 1, borderColor: "#DCFCE7" }}>
+                        <Text style={{ fontSize: 13, color: "#166534", fontWeight: "700" }}>
+                            👤 ऑर्डर नोंदवणारे: <Text style={{ color: "#0F172A", fontWeight: "800" }}>{order.user_name || "माहिती नाही"}</Text> {order.user_role === "worker" ? "👷‍♂️ (कामगार)" : order.user_role === "sub_admin" ? "🏢 (सब-ॲडमिन / व्यवस्थापक)" : order.user_role === "admin" ? "👑 (ॲडमिन)" : ""}
+                        </Text>
+                    </View>
+
                     {/* Order Notes */}
                     <View style={styles.notesBox}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -725,7 +732,8 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     </TouchableOpacity>
                 </View>
 
-                {/* BILL / INVOICE SECTION */}
+                {/* BILL / INVOICE SECTION - Hidden for Workers */}
+                {currentUser.role !== "worker" && (
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>🧾 बिलाचा फोटो (Bill / Invoice Image)</Text>
 
@@ -815,6 +823,7 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                         )}
                     </View>
                 </View>
+                )}
 
                 {/* ADMIN STATUS CONTROLS */}
                 {isAdmin && (

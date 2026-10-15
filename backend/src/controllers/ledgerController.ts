@@ -7,7 +7,7 @@ import { AuthRequest } from "../middleware/authMiddleware";
  */
 const getActiveFranchiseId = async (req: AuthRequest): Promise<number | null> => {
     const user = req.user;
-    if (user && user.role === "franchise" && user.franchise_id) {
+    if (user && user.franchise_id) {
         return user.franchise_id;
     }
 
@@ -29,6 +29,10 @@ const getActiveFranchiseId = async (req: AuthRequest): Promise<number | null> =>
  */
 export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
     try {
+        if (req.user?.role === "worker") {
+            return res.status(403).json({ message: "तुम्हाला पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी नाही." });
+        }
+
         const franchiseId = await getActiveFranchiseId(req);
         if (!franchiseId) {
             return res.status(400).json({ message: "Franchise not found" });
@@ -96,6 +100,10 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
  */
 export const getLedgerTransactions = async (req: AuthRequest, res: Response) => {
     try {
+        if (req.user?.role === "worker") {
+            return res.status(403).json({ message: "कामगारांना पैशांचा किंवा कॅश लेजरचा हिशोब पाहण्याची परवानगी नाही." });
+        }
+
         const franchiseId = await getActiveFranchiseId(req);
         if (!franchiseId) {
             return res.status(400).json({ message: "Franchise not found" });
@@ -156,6 +164,10 @@ export const getLedgerTransactions = async (req: AuthRequest, res: Response) => 
 export const createLedgerTransaction = async (req: AuthRequest, res: Response) => {
     try {
         const user = req.user!;
+        if (user.role === "worker") {
+            return res.status(403).json({ message: "कामगारांना कॅश व्यवहार नोंदवण्याची परवानगी नाही." });
+        }
+
         const franchiseId = await getActiveFranchiseId(req);
 
         if (!franchiseId) {

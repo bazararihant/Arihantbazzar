@@ -438,19 +438,21 @@ export default function OrderHistoryScreen({
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.segmentBtn, currentTab === "report" && styles.segmentBtnActiveReport]}
-                    onPress={() => setCurrentTab("report")}
-                >
-                    <Text
-                        style={[
-                            styles.segmentBtnText,
-                            currentTab === "report" && styles.segmentBtnTextActiveReport,
-                        ]}
+                {user.role !== "worker" && (
+                    <TouchableOpacity
+                        style={[styles.segmentBtn, currentTab === "report" && styles.segmentBtnActiveReport]}
+                        onPress={() => setCurrentTab("report")}
                     >
-                        📊 मासिक खर्च अहवाल
-                    </Text>
-                </TouchableOpacity>
+                        <Text
+                            style={[
+                                styles.segmentBtnText,
+                                currentTab === "report" && styles.segmentBtnTextActiveReport,
+                            ]}
+                        >
+                            📊 मासिक खर्च अहवाल
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* TAB 1: ORDERS LIST VIEW */}
@@ -678,7 +680,7 @@ export default function OrderHistoryScreen({
                                             </Text>
                                         </View>
 
-                                        {order.bill_amount ? (
+                                        {user.role !== "worker" && order.bill_amount ? (
                                             <View style={styles.orderInfoRow}>
                                                 <Text style={styles.orderInfoLabel}>💵 बिलाची रक्कम:</Text>
                                                 <Text style={[styles.orderInfoVal, { fontWeight: "800", color: "#16A34A" }]}>
