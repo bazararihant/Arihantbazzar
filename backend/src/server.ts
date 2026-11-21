@@ -5,8 +5,11 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { pool } from "./config/db";
 import { initializeDatabase } from "./config/initDb";
+import { cleanupOldImages } from "./services/imageCleanupService";
+import { executeDbHeartbeat } from "./services/heartbeatService";
 import authRoutes from "./routes/authRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import ledgerRoutes from "./routes/ledgerRoutes";
@@ -15,10 +18,21 @@ import salaryRoutes from "./routes/salaryRoutes";
 const app = express();
 
 app.use(cors());
-app.use(express.json());
 
-// Serve uploaded bill images statically
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Configure 50MB payload limits so base64 photos/bills upload without PayloadTooLargeError
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// Ensure uploads directory exists and serve uploaded bill images statically
+const uploadsDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadsDir)) {
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.warn("[Uploads] Could not create uploads directory (serverless environment):", err);
+  }
+}
+app.use("/uploads", express.static(uploadsDir));
 
 // Mount API routes
 app.use("/api/auth", authRoutes);
@@ -26,26 +40,17 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/ledger", ledgerRoutes);
 app.use("/api/workers", salaryRoutes);
 
-// Keep-Alive Ping Route (Keeps Render and Supabase alive 24/7)
-app.get("/api/ping", async (req, res) => {
+// Keep-Alive Ping & Heartbeat Route (Inserts pulse record and deletes it immediately to keep DB active 24/7)
+app.all(["/api/ping", "/api/heartbeat"], async (req, res) => {
   try {
-    const result = await pool.query(`
-      INSERT INTO keep_alive_pings (id, service_name, last_ping, ping_count)
-      VALUES (1, 'render_backend', NOW(), 1)
-      ON CONFLICT (id) DO UPDATE SET
-        last_ping = NOW(),
-        ping_count = keep_alive_pings.ping_count + 1
-      RETURNING *;
-    `);
-
+    const result = await executeDbHeartbeat();
     res.json({
       status: "alive",
-      message: "Render & Supabase keep-alive ping successful",
-      pingData: result.rows[0],
-      serverTime: new Date().toISOString(),
+      message: "डेटाबेस हार्टबीट यशस्वी: एक रेकॉर्ड भरला आणि लगेच डिलीट केला. DB २४/७ कार्यरत राहील! ✅",
+      heartbeat: result,
     });
   } catch (error: any) {
-    console.error("Ping Error:", error);
+    console.error("Heartbeat Ping Error:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
@@ -73,6 +78,19 @@ app.all("/api/test-notification", async (req, res) => {
   }
 });
 
+// Global Error Handler (Prevents server crash and provides user-friendly Marathi messages)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Global Server Error:", err);
+  if (err.type === "entity.too.large" || err.status === 413) {
+    return res.status(413).json({
+      message: "फोटोचा आकार खूप मोठा आहे. कृपया लहान आकाराचा फोटो निवडा.",
+    });
+  }
+  return res.status(500).json({
+    message: err.message || "Internal server error",
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(Number(PORT), "0.0.0.0", async () => {
@@ -82,33 +100,40 @@ app.listen(Number(PORT), "0.0.0.0", async () => {
     await pool.query("SELECT NOW()");
     console.log("Database connected successfully");
     await initializeDatabase();
+
+    // 1. Run 6-month image cleanup on startup
+    cleanupOldImages().catch((err) =>
+      console.warn("[Image Cleanup] Initial cleanup notice:", err?.message || err)
+    );
   } catch (error) {
     console.error("Database startup error:", error);
   }
 
-  // Automatic Background Ping Every 10 Minutes to Prevent Render & Supabase Sleep
-  const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
+  // 2. Schedule Daily 6-Month Image Cleanup (Runs every 24 hours)
+  const DAILY_MS = 24 * 60 * 60 * 1000;
   setInterval(async () => {
     try {
-      // 1. Ping Supabase Database table
-      await pool.query(`
-        INSERT INTO keep_alive_pings (id, service_name, last_ping, ping_count)
-        VALUES (1, 'render_backend', NOW(), 1)
-        ON CONFLICT (id) DO UPDATE SET
-          last_ping = NOW(),
-          ping_count = keep_alive_pings.ping_count + 1;
-      `);
-      console.log(`[Keep-Alive] Supabase DB pinged successfully at ${new Date().toISOString()}`);
+      await cleanupOldImages();
+    } catch (err: any) {
+      console.warn("[Image Cleanup] Daily scheduled cleanup notice:", err?.message || err);
+    }
+  }, DAILY_MS);
 
-      // 2. If Render public URL is set, ping HTTP endpoint
+  // 3. Continuous DB Pulse: Inserts a dot into db_heartbeat and deletes it immediately every 5 minutes
+  const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  setInterval(async () => {
+    try {
+      await executeDbHeartbeat();
+      console.log(`[Heartbeat] Continuous DB write & delete pulse executed at ${new Date().toISOString()}`);
+
+      // If public URL is set, ping HTTP endpoint
       const selfUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
       if (selfUrl) {
         const pingUrl = selfUrl.startsWith("http") ? `${selfUrl}/api/ping` : `https://${selfUrl}/api/ping`;
         await fetch(pingUrl);
-        console.log(`[Keep-Alive] Render HTTP self-ping sent to ${pingUrl}`);
       }
     } catch (err: any) {
-      console.warn("[Keep-Alive] Warning on automatic ping:", err?.message || err);
+      console.warn("[Heartbeat] Warning on automatic pulse:", err?.message || err);
     }
-  }, PING_INTERVAL);
+  }, HEARTBEAT_INTERVAL);
 });

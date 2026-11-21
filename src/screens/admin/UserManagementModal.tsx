@@ -142,14 +142,16 @@ export default function UserManagementModal({ visible, onClose }: Props) {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                        <Text style={styles.closeBtnText}>✕ बंद करा</Text>
+                        <Text style={styles.closeBtnText}>✕ बंद</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>👥 युजर व्यवस्थापन (Users)</Text>
+                    <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
+                        <Text style={styles.headerTitle} numberOfLines={1}>👥 युजर व्यवस्थापन</Text>
+                    </View>
                     <TouchableOpacity
                         onPress={() => setIsAddMode(!isAddMode)}
                         style={[styles.addToggleBtn, isAddMode && styles.addToggleBtnActive]}
                     >
-                        <Text style={styles.addToggleText}>{isAddMode ? "यादी पहा" : "＋ नवीन युजर"}</Text>
+                        <Text style={styles.addToggleText}>{isAddMode ? "यादी" : "＋ नवीन"}</Text>
                     </TouchableOpacity>
                 </View>
 

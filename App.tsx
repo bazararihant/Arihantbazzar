@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View, StatusBar } from "react-native";
+import { ActivityIndicator, View, StatusBar, Alert } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoginScreen from "./src/screens/auth/LoginScreen";
 import BranchDashboardScreen from "./src/screens/franchise/BranchDashboardScreen";
@@ -11,6 +11,7 @@ import CashLedgerScreen from "./src/screens/ledger/CashLedgerScreen";
 import WorkerSalaryScreen from "./src/screens/salary/WorkerSalaryScreen";
 import { getUser, UserSession } from "./src/services/storage";
 import { registerDeviceToken, setupNotificationListeners } from "./src/services/notificationService";
+import { setOnUnauthorizedCallback } from "./src/services/api";
 
 type ScreenType =
     | "login"
@@ -29,8 +30,18 @@ export default function App() {
     const [historyTab, setHistoryTab] = useState<"orders" | "report">("orders");
     const [initializing, setInitializing] = useState(true);
 
-    // Setup Notification Listeners
+    // Setup Notification Listeners & Token Expiry Handler
     useEffect(() => {
+        setOnUnauthorizedCallback(() => {
+            setUser(null);
+            setSelectedOrderId(null);
+            setCurrentScreen("login");
+            Alert.alert(
+                "सेशन संपले आहे ⚠️",
+                "तुमचे लॉगिन सत्र संपले आहे (Token Expired). कृपया पुन्हा लॉगिन करा."
+            );
+        });
+
         const unsubscribe = setupNotificationListeners((orderId) => {
             setSelectedOrderId(orderId);
             setCurrentScreen("order_detail");

@@ -418,9 +418,9 @@ export default function OrderHistoryScreen({
                 <TouchableOpacity style={styles.backBtn} onPress={onBack}>
                     <Text style={styles.backBtnText}>◀ मागे</Text>
                 </TouchableOpacity>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={styles.headerTitle}>📜 इतिहास आणि अहवाल</Text>
-                    <Text style={styles.headerSubtitle}>अरिहंत बाजार (भिलवडी, सांगली)</Text>
+                <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>📜 इतिहास आणि अहवाल</Text>
+                    <Text style={styles.headerSubtitle} numberOfLines={1}>अरिहंत बाजार (भिलवडी)</Text>
                 </View>
                 <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
                     <Text style={{ fontSize: 16 }}>🔄</Text>
@@ -438,8 +438,9 @@ export default function OrderHistoryScreen({
                             styles.segmentBtnText,
                             currentTab === "orders" && styles.segmentBtnTextActive,
                         ]}
+                        numberOfLines={1}
                     >
-                        📋 ऑर्डर्स यादी ({orders.length})
+                        📋 ऑर्डर्स ({orders.length})
                     </Text>
                 </TouchableOpacity>
 
@@ -453,8 +454,9 @@ export default function OrderHistoryScreen({
                                 styles.segmentBtnText,
                                 currentTab === "report" && styles.segmentBtnTextActiveReport,
                             ]}
+                            numberOfLines={1}
                         >
-                            📊 मासिक खर्च अहवाल
+                            📊 खर्च अहवाल
                         </Text>
                     </TouchableOpacity>
                 )}

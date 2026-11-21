@@ -88,6 +88,15 @@ export const initializeDatabase = async () => {
       );
     `);
 
+    // 6b. Create DB Heartbeat Table (Fills and deletes records continuously to keep DB active 24/7)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS db_heartbeat (
+        id SERIAL PRIMARY KEY,
+        pulse VARCHAR(50) DEFAULT 'alive',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // 7. Create Workers Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS workers (

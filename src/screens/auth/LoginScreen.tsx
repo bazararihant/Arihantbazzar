@@ -11,6 +11,7 @@ import {
     Platform,
     ScrollView,
     Image,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
@@ -22,6 +23,11 @@ interface Props {
 
 export default function LoginScreen({ onLoginSuccess }: Props) {
     const insets = useSafeAreaInsets();
+    const { height, width } = useWindowDimensions();
+
+    // Responsive sizing for smaller budget phones like Redmi 8, Moto E3 (height < 750dp)
+    const isSmallScreen = height < 750;
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -76,76 +82,121 @@ export default function LoginScreen({ onLoginSuccess }: Props) {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]} edges={["top", "bottom"]}>
+        <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
             >
                 <ScrollView
-                    contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 32) }]}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        {
+                            flexGrow: 1,
+                            justifyContent: isSmallScreen ? "flex-start" : "center",
+                            paddingTop: isSmallScreen ? 12 : 24,
+                            paddingBottom: Math.max(insets.bottom + 80, 100),
+                        },
+                    ]}
                     keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
                 >
                     {/* Header */}
-                    <View style={styles.header}>
+                    <View style={[styles.header, isSmallScreen && { marginBottom: 12 }]}>
                         <Image
                             source={require("../../assets/images/logo.png")}
-                            style={styles.logoImage}
+                            style={[
+                                styles.logoImage,
+                                isSmallScreen ? { width: 64, height: 64, marginBottom: 8 } : { width: 84, height: 84, marginBottom: 10 },
+                            ]}
                             resizeMode="contain"
                         />
-                        <View style={styles.badge}>
-                            <Text style={styles.badgeText}>🛒 ARIHANT BAZAR</Text>
+                        <View style={[styles.badge, isSmallScreen && { paddingVertical: 4, paddingHorizontal: 10, marginBottom: 6 }]}>
+                            <Text style={[styles.badgeText, isSmallScreen && { fontSize: 11 }]}>🛒 ARIHANT BAZAR</Text>
                         </View>
-                        <Text style={styles.title}>अरिहंत बाजार (भिलवडी, सांगली)</Text>
-                        <Text style={styles.subtitle}>
+                        <Text style={[styles.title, isSmallScreen && { fontSize: 20, marginBottom: 3 }]}>
+                            अरिहंत बाजार (भिलवडी, सांगली)
+                        </Text>
+                        <Text style={[styles.subtitle, isSmallScreen && { fontSize: 12 }]}>
                             दैनिक मटेरियल मागणी आणि हिशोब व्यवस्थापन
                         </Text>
                     </View>
 
                     {/* Form Card */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardHeader}>लॉगिन करा</Text>
+                    <View style={[styles.card, isSmallScreen && { padding: 16 }]}>
+                        <Text style={[styles.cardHeader, isSmallScreen && { fontSize: 15, marginBottom: 12 }]}>
+                            लॉगिन करा
+                        </Text>
 
-                        <Text style={styles.label}>वापरकर्ता नाव किंवा मोबाईल (Username / Mobile)</Text>
+                        <Text style={styles.label}>
+                            वापरकर्ता नाव किंवा मोबाईल (Username / Mobile)
+                        </Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isSmallScreen && { paddingVertical: 10, fontSize: 13 }]}
                             placeholder="उदा. amit, bagesh किंवा मोबाईल नंबर"
                             placeholderTextColor="#94A3B8"
                             value={email}
                             onChangeText={setEmail}
                             autoCapitalize="none"
+                            autoCorrect={false}
                         />
 
-                        <Text style={styles.label}>पासवर्ड (Password / Mobile)</Text>
-                        <View style={styles.passwordContainer}>
-                            <TextInput
-                                style={styles.passwordInput}
-                                placeholder="तुमचा मोबाईल नंबर टाका"
-                                placeholderTextColor="#94A3B8"
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                                keyboardType="phone-pad"
-                            />
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <Text style={[styles.label, { marginBottom: 0 }]}>
+                                पासवर्ड (Password / Mobile)
+                            </Text>
                             <TouchableOpacity
                                 onPress={() => setShowPassword(!showPassword)}
-                                style={styles.eyeButton}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                                <Text style={styles.eyeText}>
-                                    {showPassword ? "लपवा" : "पहा"}
+                                <Text style={styles.toggleVisibilityLink}>
+                                    {showPassword ? "🙈 पासवर्ड लपवा" : "👁️ पासवर्ड पहा"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
+                        <View style={[styles.passwordContainer, isSmallScreen && { marginBottom: 16 }]}>
+                            <TextInput
+                                style={[styles.passwordInput, isSmallScreen && { paddingVertical: 10, fontSize: 13 }]}
+                                placeholder="तुमचा पासवर्ड किंवा मोबाईल नंबर टाका"
+                                placeholderTextColor="#94A3B8"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                textContentType="password"
+                                selectionColor="#16A34A"
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={[styles.eyeButton, isSmallScreen && { paddingVertical: 10, paddingHorizontal: 10 }]}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.eyeText}>
+                                    {showPassword ? "🙈 लपवा" : "👁️ पहा"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Helper Hint */}
+                        <Text style={styles.hintText}>
+                            💡 टीप: पासवर्ड टाईप करताना पाहण्यासाठी उजवीकडील "👁️ पहा" बटनावर टॅप करा.
+                        </Text>
+
                         <TouchableOpacity
-                            style={styles.loginButton}
+                            style={[styles.loginButton, isSmallScreen && { paddingVertical: 12, marginTop: 8 }]}
                             onPress={() => handleLogin()}
                             disabled={loading}
+                            activeOpacity={0.85}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
-                                <Text style={styles.loginButtonText}>लॉगिन करा (LOGIN)</Text>
+                                <Text style={[styles.loginButtonText, isSmallScreen && { fontSize: 14 }]}>
+                                    लॉगिन करा (LOGIN) ➔
+                                </Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -164,86 +215,87 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 20,
-        paddingTop: 30,
-        paddingBottom: 40,
+        paddingHorizontal: 18,
     },
     header: {
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: 16,
     },
     logoImage: {
-        width: 100,
-        height: 100,
-        marginBottom: 12,
-        borderRadius: 20,
+        borderRadius: 16,
     },
     badge: {
         backgroundColor: "#DCFCE7",
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
         borderRadius: 20,
-        marginBottom: 10,
+        marginBottom: 8,
     },
     badgeText: {
         color: "#15803D",
-        fontWeight: "700",
+        fontWeight: "800",
         fontSize: 12,
         letterSpacing: 0.5,
     },
     title: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: "800",
         color: "#0F172A",
-        marginBottom: 6,
+        marginBottom: 4,
+        textAlign: "center",
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 13,
         color: "#64748B",
         textAlign: "center",
     },
     card: {
         backgroundColor: "#FFFFFF",
-        borderRadius: 18,
+        borderRadius: 16,
         padding: 20,
         borderWidth: 1,
         borderColor: "#E2E8F0",
-        elevation: 2,
+        elevation: 3,
         shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
     },
     cardHeader: {
-        fontSize: 16,
-        fontWeight: "700",
+        fontSize: 17,
+        fontWeight: "800",
         color: "#1E293B",
-        marginBottom: 16,
+        marginBottom: 14,
     },
     label: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#475569",
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#334155",
         marginBottom: 6,
     },
+    toggleVisibilityLink: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#16A34A",
+    },
     input: {
-        backgroundColor: "#F8FAFC",
-        borderWidth: 1,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1.5,
         borderColor: "#CBD5E1",
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 12,
         fontSize: 14,
         color: "#0F172A",
-        marginBottom: 16,
+        marginBottom: 14,
     },
     passwordContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#F8FAFC",
-        borderWidth: 1,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1.5,
         borderColor: "#CBD5E1",
         borderRadius: 10,
-        marginBottom: 20,
+        marginBottom: 8,
     },
     passwordInput: {
         flex: 1,
@@ -253,13 +305,22 @@ const styles = StyleSheet.create({
         color: "#0F172A",
     },
     eyeButton: {
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         paddingVertical: 12,
+        backgroundColor: "#F1F5F9",
+        borderTopRightRadius: 9,
+        borderBottomRightRadius: 9,
     },
     eyeText: {
-        color: "#16A34A",
-        fontWeight: "600",
+        color: "#0F172A",
+        fontWeight: "700",
         fontSize: 12,
+    },
+    hintText: {
+        fontSize: 11,
+        color: "#64748B",
+        marginBottom: 14,
+        fontStyle: "italic",
     },
     loginButton: {
         backgroundColor: "#16A34A",
@@ -268,11 +329,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         elevation: 2,
+        shadowColor: "#16A34A",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
     },
     loginButtonText: {
         color: "#FFFFFF",
         fontSize: 15,
-        fontWeight: "700",
+        fontWeight: "800",
         letterSpacing: 0.5,
     },
 });

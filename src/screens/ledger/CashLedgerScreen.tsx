@@ -191,18 +191,18 @@ export default function CashLedgerScreen({ currentUser, onBack }: Props) {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={onBack}>
                     <Text style={styles.backBtnText}>← मागे</Text>
                 </TouchableOpacity>
-                <View style={{ flex: 1, marginHorizontal: 8 }}>
+                <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
                     <Text style={styles.headerTitle} numberOfLines={1}>
                         💰 रोख जमा-खर्च हिशोब
                     </Text>
                     <Text style={styles.headerSubtitle} numberOfLines={1}>
-                        अरिहंत बाजार ↔ मुख्य ॲडमिन
+                        अरिहंत बाजार ↔ ॲडमिन
                     </Text>
                 </View>
                 <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>

@@ -400,9 +400,9 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
         try {
             const options: any = {
                 mediaType: "photo",
-                quality: 0.7,
-                maxWidth: 1200,
-                maxHeight: 1200,
+                quality: 0.6,
+                maxWidth: 1024,
+                maxHeight: 1024,
                 includeBase64: true,
             };
 
@@ -454,7 +454,8 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     headers: {
                         "Content-Type": "multipart/form-data",
                     },
-                    timeout: 25000,
+                    transformRequest: (data) => data,
+                    timeout: 35000,
                 });
                 uploadSuccess = true;
             } catch (formErr) {
@@ -468,7 +469,7 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     bill_amount: billAmount.trim() || undefined,
                 }, {
                     headers: { "Content-Type": "application/json" },
-                    timeout: 25000,
+                    timeout: 35000,
                 });
                 uploadSuccess = true;
             }
@@ -538,9 +539,9 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                 <TouchableOpacity style={styles.backBtn} onPress={onBack}>
                     <Text style={styles.backBtnText}>◀ मागे</Text>
                 </TouchableOpacity>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={styles.headerTitle}>ऑर्डर तपशील #{order.id}</Text>
-                    <Text style={styles.headerBranchText}>अरिहंत बाजार (भिलवडी, सांगली)</Text>
+                <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>ऑर्डर तपशील #{order.id}</Text>
+                    <Text style={styles.headerBranchText} numberOfLines={1}>अरिहंत बाजार (भिलवडी, सांगली)</Text>
                 </View>
                 {isAdmin ? (
                     <TouchableOpacity style={styles.deleteOrderIconBtn} onPress={handleDeleteOrder}>
@@ -572,9 +573,14 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     </View>
 
                     <Text style={styles.dateLabel}>
-                        📅 तारीख: {new Date(order.created_at).toLocaleString("mr-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
+                        📅 तारीख: {new Date(order.created_at).toLocaleDateString("mr-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                        })} • ⏰ {new Date(order.created_at).toLocaleTimeString("mr-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
                         })}
                     </Text>
 
@@ -601,16 +607,16 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                 {/* MATERIAL CHECKLIST CARD */}
                 <View style={[styles.card, { borderColor: "#86EFAC" }]}>
                     <View style={styles.cardHeaderRow}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.cardTitle}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text style={styles.cardTitle} numberOfLines={1}>
                                 📦 मागवलेले साहित्य & चेकलिस्ट ({order.items.length} वस्तू)
                             </Text>
-                            <Text style={styles.checklistHint}>
+                            <Text style={styles.checklistHint} numberOfLines={1}>
                                 साहित्य गोळा करताना किंवा मिळताना टिक करा:
                             </Text>
                         </View>
 
-                        <TouchableOpacity style={styles.checkAllBtn} onPress={handleCheckAll}>
+                        <TouchableOpacity style={[styles.checkAllBtn, { flexShrink: 0 }]} onPress={handleCheckAll}>
                             <Text style={styles.checkAllBtnText}>
                                 {checkedCount === order.items.length ? "सर्व अनटिक" : "सर्व टिक करा"}
                             </Text>
@@ -732,8 +738,7 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                     </TouchableOpacity>
                 </View>
 
-                {/* BILL / INVOICE SECTION - Admin Only */}
-                {isAdmin && (
+                {/* BILL / INVOICE SECTION - Visible to Admin & Branch Users */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>🧾 बिलाचा फोटो (Bill / Invoice Image)</Text>
 
@@ -765,65 +770,68 @@ export default function OrderDetailScreen({ orderId, currentUser, onBack }: Prop
                         <View style={styles.noBillBox}>
                             <Text style={styles.noBillIcon}>📷</Text>
                             <Text style={styles.noBillText}>
-                                अद्याप या ऑर्डरसाठी बिलाचा फोटो अपलोड केलेला नाही
+                                {isAdmin
+                                    ? "अद्याप या ऑर्डरसाठी बिलाचा फोटो अपलोड केलेला नाही"
+                                    : "अद्याप या ऑर्डरसाठी मुख्य ॲडमिनकडून बिलाचा फोटो जोडलेला नाही"}
                             </Text>
                         </View>
                     )}
 
-                    {/* Upload / Re-Upload Controls */}
-                    <View style={styles.uploadControls}>
-                        <Text style={styles.uploadSubtitle}>
-                            {billUrl
-                                ? "नवीन फोटो अपलोड करायचा असल्यास बदला:"
-                                : "पावती किंवा बिलाचा फोटो जोडा:"}
-                        </Text>
+                    {/* Upload / Re-Upload Controls - Only for Admin */}
+                    {isAdmin && (
+                        <View style={styles.uploadControls}>
+                            <Text style={styles.uploadSubtitle}>
+                                {billUrl
+                                    ? "नवीन फोटो अपलोड करायचा असल्यास बदला:"
+                                    : "पावती किंवा बिलाचा फोटो जोडा:"}
+                            </Text>
 
-                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                            <TextInput
-                                style={[styles.amountInput, { flex: 1, marginBottom: 0, marginRight: 8 }]}
-                                placeholder="बिलाची रक्कम टाका (उदा. ₹ 4500)"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="numeric"
-                                value={billAmount}
-                                onChangeText={setBillAmount}
-                            />
-                            <TouchableOpacity
-                                style={styles.saveAmountBtn}
-                                onPress={handleSaveBillAmount}
-                            >
-                                <Text style={styles.saveAmountBtnText}>💾 सेव्ह</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.btnRow}>
-                            <TouchableOpacity
-                                style={[styles.photoBtn, styles.cameraBtn]}
-                                onPress={() => handlePickImage(true)}
-                                disabled={uploading}
-                            >
-                                <Text style={styles.photoBtnText}>📸 कॅमेऱ्यातून काढा</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.photoBtn, styles.galleryBtn]}
-                                onPress={() => handlePickImage(false)}
-                                disabled={uploading}
-                            >
-                                <Text style={styles.photoBtnText}>🖼️ गॅलरीतून निवडा</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {uploading && (
-                            <View style={styles.uploadingBox}>
-                                <ActivityIndicator color="#16A34A" />
-                                <Text style={styles.uploadingText}>
-                                    बिलाचा फोटो अपलोड होत आहे...
-                                </Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                                <TextInput
+                                    style={[styles.amountInput, { flex: 1, marginBottom: 0, marginRight: 8 }]}
+                                    placeholder="बिलाची रक्कम टाका (उदा. ₹ 4500)"
+                                    placeholderTextColor="#94A3B8"
+                                    keyboardType="numeric"
+                                    value={billAmount}
+                                    onChangeText={setBillAmount}
+                                />
+                                <TouchableOpacity
+                                    style={styles.saveAmountBtn}
+                                    onPress={handleSaveBillAmount}
+                                >
+                                    <Text style={styles.saveAmountBtnText}>💾 सेव्ह</Text>
+                                </TouchableOpacity>
                             </View>
-                        )}
-                    </View>
+
+                            <View style={styles.btnRow}>
+                                <TouchableOpacity
+                                    style={[styles.photoBtn, styles.cameraBtn]}
+                                    onPress={() => handlePickImage(true)}
+                                    disabled={uploading}
+                                >
+                                    <Text style={styles.photoBtnText}>📸 कॅमेऱ्यातून काढा</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.photoBtn, styles.galleryBtn]}
+                                    onPress={() => handlePickImage(false)}
+                                    disabled={uploading}
+                                >
+                                    <Text style={styles.photoBtnText}>🖼️ गॅलरीतून निवडा</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {uploading && (
+                                <View style={styles.uploadingBox}>
+                                    <ActivityIndicator color="#16A34A" />
+                                    <Text style={styles.uploadingText}>
+                                        बिलाचा फोटो अपलोड होत आहे...
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
                 </View>
-                )}
 
                 {/* ADMIN STATUS CONTROLS */}
                 {isAdmin && (

@@ -1,0 +1,17 @@
+name: 24/7 Keep Alive Heartbeat
+
+on:
+  schedule:
+    # Runs every 6 hours (at minute 0 of hour 0, 6, 12, 18 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Arihant Bazzar Backend & Database Heartbeat
+        run: |
+          echo "Sending keep-alive ping to backend..."
+          curl -s -i "https://arihantbazzar-smoky.vercel.app/api/ping"
+          echo "Heartbeat ping sent successfully!"

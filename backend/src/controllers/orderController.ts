@@ -166,19 +166,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 
         const result = await pool.query(query, params);
 
-        // Only Admin / Sub-Admin can see bill amounts and bill images
-        const sanitizedOrders = result.rows.map((row: any) => {
-            if (user.role !== "admin" && user.role !== "sub_admin") {
-                return {
-                    ...row,
-                    bill_amount: null,
-                    bill_image_url: null,
-                };
-            }
-            return row;
-        });
-
-        return res.json({ orders: sanitizedOrders });
+        return res.json({ orders: result.rows });
     } catch (error) {
         console.error("Get orders error:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -212,12 +200,6 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         // Ensure branch users can only see their branch's order
         if (user.role !== "admin" && user.role !== "sub_admin" && order.franchise_id !== user.franchise_id) {
             return res.status(403).json({ message: "Forbidden" });
-        }
-
-        // Hide bill information from non-admin / non-sub-admin users
-        if (user.role !== "admin" && user.role !== "sub_admin") {
-            order.bill_amount = null;
-            order.bill_image_url = null;
         }
 
         const itemsRes = await pool.query(
@@ -256,26 +238,21 @@ export const uploadBill = async (req: AuthRequest, res: Response) => {
         if (file) {
             const ext = path.extname(file.originalname) || ".jpg";
             const filename = `bill-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-            let savedToDisk = false;
+            const mimeType = file.mimetype || "image/jpeg";
 
-            // Attempt to write physical file to uploads/ folder (for local server/storage)
+            // Always use base64 data URI for 100% reliability across serverless/cloud environments
+            billImageUrl = `data:${mimeType};base64,${file.buffer.toString("base64")}`;
+
+            // Also write physical file to uploads/ folder if disk is available
             try {
                 const uploadsDir = path.join(__dirname, "../../uploads");
                 if (!fs.existsSync(uploadsDir)) {
                     fs.mkdirSync(uploadsDir, { recursive: true });
                 }
                 fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
-                savedToDisk = true;
             } catch (diskErr) {
-                console.warn("[Upload] Could not write to disk (likely serverless/Vercel):", diskErr);
+                console.warn("[Upload] Local disk write skipped:", diskErr);
             }
-
-            // If running on a persistent server, serve via /uploads/
-            // Otherwise use Data URL so Vercel / Cloud never loses the image
-            const mimeType = file.mimetype || "image/jpeg";
-            billImageUrl = savedToDisk
-                ? `/uploads/${filename}`
-                : `data:${mimeType};base64,${file.buffer.toString("base64")}`;
         } else if (image_base64) {
             billImageUrl = image_base64;
 
@@ -718,4 +695,27 @@ export const getExpenseReport = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ message: error?.message || "Internal server error" });
     }
 };
+
+// 15. Manual trigger to cleanup bill images older than 6 months
+export const cleanupOldImagesHandler = async (req: AuthRequest, res: Response) => {
+    try {
+        if (req.user?.role !== "admin" && req.user?.role !== "sub_admin") {
+            return res.status(403).json({ message: "केवळ ॲडमिनला जुने फोटो हटवण्याची परवानगी आहे." });
+        }
+
+        const { cleanupOldImages } = await import("../services/imageCleanupService");
+        const result = await cleanupOldImages();
+
+        return res.json({
+            success: true,
+            message: result.message,
+            deletedFiles: result.deletedFiles,
+            updatedDbOrders: result.updatedDbOrders,
+        });
+    } catch (error: any) {
+        console.error("Cleanup old images error:", error);
+        return res.status(500).json({ message: error?.message || "Internal server error" });
+    }
+};
+
 

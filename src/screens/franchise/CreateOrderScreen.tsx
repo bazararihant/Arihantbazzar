@@ -231,11 +231,11 @@ export default function CreateOrderScreen({ onBack, onOrderCreated }: Props) {
                     <TouchableOpacity style={styles.backBtn} onPress={onBack}>
                         <Text style={styles.backBtnText}>◀ मागे जा</Text>
                     </TouchableOpacity>
-                    <View style={{ flex: 1, alignItems: "center" }}>
-                        <Text style={styles.headerTitle}>नवीन सामानाची मागणी</Text>
-                        <Text style={styles.headerSub}>भिलवडी शाखा (सांगली)</Text>
+                    <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
+                        <Text style={styles.headerTitle} numberOfLines={1}>नवीन सामानाची मागणी</Text>
+                        <Text style={styles.headerSub} numberOfLines={1}>भिलवडी शाखा (सांगली)</Text>
                     </View>
-                    <View style={{ width: 60 }} />
+                    <View style={{ width: 44 }} />
                 </View>
 
                 <ScrollView
@@ -439,8 +439,8 @@ export default function CreateOrderScreen({ onBack, onOrderCreated }: Props) {
                 {/* STICKY BOTTOM SUBMIT BAR */}
                 <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <View style={styles.bottomSummary}>
-                        <Text style={styles.bottomSummaryCount}>{items.length} वस्तू</Text>
-                        <Text style={styles.bottomSummarySub}>भिलवडी शाखेची मागणी</Text>
+                        <Text style={styles.bottomSummaryCount} numberOfLines={1}>{items.length} वस्तू</Text>
+                        <Text style={styles.bottomSummarySub} numberOfLines={1}>भिलवडी शाखेची मागणी</Text>
                     </View>
 
                     <TouchableOpacity

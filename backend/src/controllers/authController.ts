@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { pool } from "../config/db";
 import { AuthRequest } from "../middleware/authMiddleware";
 
+export const JWT_SECRET = process.env.JWT_SECRET || "arihant_bazzar_secure_jwt_token_2026";
+
 export const registerUser = async (req: Request, res: Response) => {
     try {
         const { name, email, password, role = "franchise", franchise_id } = req.body;
@@ -92,9 +94,9 @@ export const loginUser = async (req: Request, res: Response) => {
                 role: user.role,
                 franchise_id: user.franchise_id,
             },
-            process.env.JWT_SECRET as string,
+            JWT_SECRET,
             {
-                expiresIn: "30d",
+                expiresIn: "180d", // 6 months token validity so user does not get logged out repeatedly
             }
         );
 

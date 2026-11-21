@@ -1050,9 +1050,9 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
                     <Text style={styles.backBtnText}>◀ मागे</Text>
                 </TouchableOpacity>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={styles.headerTitle}>👷 कामगार हजेरी व पगार</Text>
-                    <Text style={styles.headerSubtitle}>अरिहंत बाजार (भिलवडी)</Text>
+                <View style={{ flex: 1, alignItems: "center", marginHorizontal: 6 }}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>👷 कामगार हजेरी व पगार</Text>
+                    <Text style={styles.headerSubtitle} numberOfLines={1}>अरिहंत बाजार (भिलवडी)</Text>
                 </View>
                 <TouchableOpacity
                     onPress={() => {
@@ -1072,8 +1072,8 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                     style={[styles.tabButton, activeTab === "attendance" && styles.tabButtonActive]}
                     onPress={() => setActiveTab("attendance")}
                 >
-                    <Text style={[styles.tabButtonText, activeTab === "attendance" && styles.tabButtonTextActive]}>
-                        📅 दैनिक हजेरी
+                    <Text style={[styles.tabButtonText, activeTab === "attendance" && styles.tabButtonTextActive]} numberOfLines={1}>
+                        📅 हजेरी
                     </Text>
                 </TouchableOpacity>
 
@@ -1086,8 +1086,9 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                             styles.tabButtonText,
                             activeTab === "salary_overview" && styles.tabButtonTextActive,
                         ]}
+                        numberOfLines={1}
                     >
-                        💰 पगार व उचल
+                        💰 पगार
                     </Text>
                 </TouchableOpacity>
 
@@ -1095,7 +1096,7 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                     style={[styles.tabButton, activeTab === "reports" && styles.tabButtonActive]}
                     onPress={() => setActiveTab("reports")}
                 >
-                    <Text style={[styles.tabButtonText, activeTab === "reports" && styles.tabButtonTextActive]}>
+                    <Text style={[styles.tabButtonText, activeTab === "reports" && styles.tabButtonTextActive]} numberOfLines={1}>
                         📊 अहवाल
                     </Text>
                 </TouchableOpacity>
@@ -1104,8 +1105,8 @@ export default function WorkerSalaryScreen({ currentUser, onBack }: Props) {
                     style={[styles.tabButton, activeTab === "workers" && styles.tabButtonActive]}
                     onPress={() => setActiveTab("workers")}
                 >
-                    <Text style={[styles.tabButtonText, activeTab === "workers" && styles.tabButtonTextActive]}>
-                        👥 कामगार यादी
+                    <Text style={[styles.tabButtonText, activeTab === "workers" && styles.tabButtonTextActive]} numberOfLines={1}>
+                        👥 कामगार
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -1510,9 +1511,10 @@ const styles = StyleSheet.create({
         borderBottomColor: "#16A34A",
     },
     tabButtonText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: "600",
         color: "#64748B",
+        textAlign: "center",
     },
     tabButtonTextActive: {
         color: "#16A34A",

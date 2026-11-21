@@ -1,8 +1,7 @@
 import axios from "axios";
-import { getToken } from "./storage";
+import { getToken, clearAuthData } from "./storage";
 
-// Default host for Android Emulator accessing host PC is 10.0.2.2
-// If running on a physical phone on the same Wi-Fi, change this to your machine's Wi-Fi IP (e.g., 192.168.1.10)
+// Default backend host on Vercel
 export let CURRENT_HOST = "arihantbazzar-smoky.vercel.app";
 
 export const setCustomHost = (host: string) => {
@@ -21,7 +20,16 @@ export const getMediaUrl = (relativePath?: string | null) => {
     ) {
         return relativePath;
     }
-    return `https://${CURRENT_HOST}${relativePath}`;
+    // For relative paths like /uploads/bill-xxx.jpg
+    const cleanPath = relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
+    return `https://${CURRENT_HOST}${cleanPath}`;
+};
+
+// Global session expired callback
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorizedCallback = (callback: () => void) => {
+    onUnauthorizedCallback = callback;
 };
 
 const api = axios.create({
@@ -29,7 +37,7 @@ const api = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 15000,
+    timeout: 30000,
 });
 
 api.interceptors.request.use(
@@ -41,6 +49,20 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response && error.response.status === 401) {
+            console.warn("[API Interceptor] 401 Unauthorized detected - Token Expired or Invalid");
+            await clearAuthData();
+            if (onUnauthorizedCallback) {
+                onUnauthorizedCallback();
+            }
+        }
         return Promise.reject(error);
     }
 );

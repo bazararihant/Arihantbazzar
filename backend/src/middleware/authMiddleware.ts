@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+const JWT_SECRET = process.env.JWT_SECRET || "arihant_bazzar_secure_jwt_token_2026";
+
 export interface AuthRequest extends Request {
   user?: {
     id: number;
@@ -21,6 +23,7 @@ export const authenticateToken = (
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         message: "Authentication token required",
+        expired: false,
       });
     }
 
@@ -28,7 +31,7 @@ export const authenticateToken = (
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      JWT_SECRET
     ) as {
       id: number;
       email: string;
@@ -39,9 +42,13 @@ export const authenticateToken = (
     req.user = decoded;
 
     next();
-  } catch (error) {
+  } catch (error: any) {
+    const isExpired = error?.name === "TokenExpiredError";
     return res.status(401).json({
-      message: "Invalid or expired token",
+      message: isExpired
+        ? "सेशन संपले आहे (Token Expired). कृपया पुन्हा लॉगिन करा."
+        : "Invalid or expired token",
+      expired: isExpired,
     });
   }
 };

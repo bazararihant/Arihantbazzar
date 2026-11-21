@@ -61,6 +61,7 @@ export default function AdminDashboardScreen({
     const [orders, setOrders] = useState<OrderItem[]>([]);
     const [franchises, setFranchises] = useState<Franchise[]>([]);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<"today" | "all">("today");
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
@@ -109,6 +110,47 @@ export default function AdminDashboardScreen({
         ]);
     };
 
+    const handleCleanupOldImages = () => {
+        Alert.alert(
+            "६ महिने जुने फोटो साफ करा 🧹",
+            "६ महिन्यांपेक्षा जुन्या सर्व ऑर्डर्सचे बिलांचे फोटो सर्व्हरवरून हटवायचे आहेत का? यामुळे सर्व्हरवर जागा मोकळी होईल.",
+            [
+                { text: "रद्द करा", style: "cancel" },
+                {
+                    text: "होय, साफ करा",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const res = await api.post("/orders/cleanup-old-images");
+                            Alert.alert("यशस्वी! ✅", res.data.message || "६ महिने जुने फोटो हटवण्यात आले आहेत.");
+                            loadData();
+                        } catch (error: any) {
+                            Alert.alert("एरर", error?.response?.data?.message || "फोटो हटवता आले नाहीत");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const formatOrderDateTime = (dateStr: string) => {
+        if (!dateStr) return "तारीख उपलब्ध नाही";
+        const d = new Date(dateStr);
+        return (
+            d.toLocaleDateString("mr-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+            }) +
+            " • " +
+            d.toLocaleTimeString("mr-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+            })
+        );
+    };
+
     // Filter STRICTLY for Today's Orders on Admin Dashboard
     const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
     const todayFormatted = useMemo(() => {
@@ -119,16 +161,6 @@ export default function AdminDashboardScreen({
         });
     }, []);
 
-    const todayOrders = useMemo(() => {
-        return orders.filter((o) => {
-            const oDate = o.created_at ? o.created_at.split("T")[0] : "";
-            const isToday = oDate === todayStr;
-            if (!isToday) return false;
-            if (selectedStatus && o.status !== selectedStatus) return false;
-            return true;
-        });
-    }, [orders, todayStr, selectedStatus]);
-
     // All orders from today (unfiltered by status) for accurate counters
     const allTodayOrders = useMemo(() => {
         return orders.filter((o) => {
@@ -136,6 +168,14 @@ export default function AdminDashboardScreen({
             return oDate === todayStr;
         });
     }, [orders, todayStr]);
+
+    const displayOrders = useMemo(() => {
+        let list = viewMode === "today" ? allTodayOrders : orders;
+        if (selectedStatus) {
+            list = list.filter((o) => o.status === selectedStatus);
+        }
+        return list;
+    }, [viewMode, allTodayOrders, orders, selectedStatus]);
 
     const todayTotal = allTodayOrders.length;
     const todayPending = allTodayOrders.filter((o) => o.status === "pending").length;
@@ -193,20 +233,20 @@ export default function AdminDashboardScreen({
         <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
             <View style={styles.topBar}>
-                <View>
+                <View style={{ flex: 1, marginRight: 8 }}>
                     <View style={styles.adminBadge}>
-                        <Text style={styles.adminBadgeText}>
-                            {user.role === "sub_admin" ? "🏢 SUB-ADMIN / सब-ॲडमिन" : "👑 CENTRAL ADMIN"}
+                        <Text style={styles.adminBadgeText} numberOfLines={1}>
+                            {user.role === "sub_admin" ? "🏢 SUB-ADMIN" : "👑 CENTRAL ADMIN"}
                         </Text>
                     </View>
-                    <Text style={styles.adminTitle}>
+                    <Text style={styles.adminTitle} numberOfLines={1} ellipsizeMode="tail">
                         {user.name ? `${user.name} (${user.role === "sub_admin" ? "सब-ॲडमिन" : "मुख्य ॲडमिन"})` : "अरिहंत बाजार ॲडमिन"}
                     </Text>
-                    <Text style={styles.adminSubtitle}>
+                    <Text style={styles.adminSubtitle} numberOfLines={1} ellipsizeMode="tail">
                         🏢 {activeBranch.name}
                     </Text>
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
                     <TouchableOpacity style={styles.historyTopBtn} onPress={() => onViewHistory("orders")}>
                         <Text style={styles.historyTopBtnText}>📜 इतिहास</Text>
                     </TouchableOpacity>
@@ -245,64 +285,72 @@ export default function AdminDashboardScreen({
                 {/* 2x2 COMPACT QUICK ACTION GRID */}
                 <View style={styles.actionGrid}>
                     {/* History Card */}
-                    <TouchableOpacity
-                        style={[styles.actionGridItem, { borderColor: "#BFDBFE" }]}
-                        onPress={() => onViewHistory("orders")}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#EFF6FF" }]}>
-                            <Text style={styles.actionGridIcon}>📜</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionGridTitle} numberOfLines={1}>ऑर्डर इतिहास</Text>
-                            <Text style={styles.actionGridSub} numberOfLines={1}>सर्व जुन्या ऑर्डर्स</Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.actionGridItem}>
+                        <TouchableOpacity
+                            style={[styles.actionGridCard, { borderColor: "#BFDBFE" }]}
+                            onPress={() => onViewHistory("orders")}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.actionGridIconCircle, { backgroundColor: "#EFF6FF" }]}>
+                                <Text style={styles.actionGridIcon}>📜</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.actionGridTitle} numberOfLines={1}>ऑर्डर इतिहास</Text>
+                                <Text style={styles.actionGridSub} numberOfLines={1}>सर्व जुन्या ऑर्डर्स</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Worker Attendance & Salary */}
-                    <TouchableOpacity
-                        style={[styles.actionGridItem, { borderColor: "#BBF7D0" }]}
-                        onPress={onViewSalary}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#DCFCE7" }]}>
-                            <Text style={styles.actionGridIcon}>👷</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionGridTitle} numberOfLines={1}>कामगार पगार</Text>
-                            <Text style={styles.actionGridSub} numberOfLines={1}>हजेरी व उचल</Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.actionGridItem}>
+                        <TouchableOpacity
+                            style={[styles.actionGridCard, { borderColor: "#BBF7D0" }]}
+                            onPress={onViewSalary}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.actionGridIconCircle, { backgroundColor: "#DCFCE7" }]}>
+                                <Text style={styles.actionGridIcon}>👷</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.actionGridTitle} numberOfLines={1}>कामगार पगार</Text>
+                                <Text style={styles.actionGridSub} numberOfLines={1}>हजेरी व उचल</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Cash Ledger */}
-                    <TouchableOpacity
-                        style={[styles.actionGridItem, { borderColor: "#BAE6FD" }]}
-                        onPress={onViewLedger}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#F0F9FF" }]}>
-                            <Text style={styles.actionGridIcon}>💰</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionGridTitle} numberOfLines={1}>कॅश लेजर</Text>
-                            <Text style={styles.actionGridSub} numberOfLines={1}>जमा-खर्च हिशोब</Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.actionGridItem}>
+                        <TouchableOpacity
+                            style={[styles.actionGridCard, { borderColor: "#BAE6FD" }]}
+                            onPress={onViewLedger}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.actionGridIconCircle, { backgroundColor: "#F0F9FF" }]}>
+                                <Text style={styles.actionGridIcon}>💰</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.actionGridTitle} numberOfLines={1}>कॅश लेजर</Text>
+                                <Text style={styles.actionGridSub} numberOfLines={1}>जमा-खर्च हिशोब</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* User Management */}
-                    <TouchableOpacity
-                        style={[styles.actionGridItem, { borderColor: "#DDD6FE" }]}
-                        onPress={() => setShowUserModal(true)}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.actionGridIconCircle, { backgroundColor: "#F5F3FF" }]}>
-                            <Text style={styles.actionGridIcon}>👥</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionGridTitle} numberOfLines={1}>युजर मॅनेजमेंट</Text>
-                            <Text style={styles.actionGridSub} numberOfLines={1}>शाखा खाती</Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.actionGridItem}>
+                        <TouchableOpacity
+                            style={[styles.actionGridCard, { borderColor: "#DDD6FE" }]}
+                            onPress={() => setShowUserModal(true)}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.actionGridIconCircle, { backgroundColor: "#F5F3FF" }]}>
+                                <Text style={styles.actionGridIcon}>👥</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.actionGridTitle} numberOfLines={1}>युजर मॅनेजमेंट</Text>
+                                <Text style={styles.actionGridSub} numberOfLines={1}>शाखा खाती</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* COMPACT MONTHLY EXPENSE STRIP */}
@@ -322,6 +370,25 @@ export default function AdminDashboardScreen({
                     </View>
                     <Text style={styles.monthlyStripLink}>खर्च अहवाल ➔</Text>
                 </TouchableOpacity>
+
+                {/* 6-MONTH OLD IMAGE CLEANUP STRIP */}
+                <TouchableOpacity
+                    style={[styles.compactMonthlyStrip, { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5", marginTop: -2 }]}
+                    onPress={handleCleanupOldImages}
+                    activeOpacity={0.85}
+                >
+                    <View style={styles.monthlyStripLeft}>
+                        <View style={[styles.monthlyStripBadge, { backgroundColor: "#FEE2E2" }]}>
+                            <Text style={[styles.monthlyStripBadgeText, { color: "#DC2626" }]}>🧹 सर्व्हर स्टोरेज</Text>
+                        </View>
+                        <Text style={[styles.monthlyStripAmount, { color: "#991B1B", fontSize: 13 }]}>
+                            ६ महिने जुने फोटो हटवा
+                        </Text>
+                    </View>
+                    <Text style={[styles.monthlyStripLink, { color: "#DC2626" }]}>साफ करा ➔</Text>
+                </TouchableOpacity>
+
+
 
                 {/* COMPACT TODAY'S ORDERS HEADER */}
                 <View style={styles.todayHeaderRow}>
@@ -376,17 +443,45 @@ export default function AdminDashboardScreen({
                                 {chip.label}
                             </Text>
                         </TouchableOpacity>
+
+
                     ))}
                 </ScrollView>
 
-                {/* TODAY'S ORDERS LIST */}
+                {/* VIEW MODE TOGGLE (Today vs All) */}
+                <View style={styles.viewModeContainer}>
+                    <TouchableOpacity
+                        style={[styles.viewModeBtn, viewMode === "today" && styles.viewModeBtnActive]}
+                        onPress={() => setViewMode("today")}
+                    >
+                        <Text style={[styles.viewModeText, viewMode === "today" && styles.viewModeTextActive]}>
+                            📅 आजच्या ऑर्डर्स ({allTodayOrders.length})
+                        </Text>
+                    </TouchableOpacity>
+
+
+                    <TouchableOpacity
+                        style={[styles.viewModeBtn, viewMode === "all" && styles.viewModeBtnActive]}
+                        onPress={() => setViewMode("all")}
+                    >
+                        <Text style={[styles.viewModeText, viewMode === "all" && styles.viewModeTextActive]}>
+                            📋 सर्व ऑर्डर्स ({orders.length})
+                        </Text>
+                    </TouchableOpacity>
+
+
+                </View>
+
+                {/* ORDERS LIST HEADER */}
                 <View style={styles.listHeaderRow}>
                     <Text style={styles.listTitle}>
-                        आजच्या ऑर्डर्सची यादी ({todayOrders.length})
+                        {viewMode === "today" ? `आजच्या ऑर्डर्सची यादी (${displayOrders.length})` : `सर्व ऑर्डर्सची यादी (${displayOrders.length})`}
                     </Text>
                     <TouchableOpacity onPress={onRefresh}>
                         <Text style={styles.refreshLink}>🔄 रिफ्रेश करा</Text>
                     </TouchableOpacity>
+
+
                 </View>
 
                 {loading ? (
@@ -395,19 +490,32 @@ export default function AdminDashboardScreen({
                         color="#2563EB"
                         style={{ marginVertical: 30 }}
                     />
-                ) : todayOrders.length === 0 ? (
+                ) : displayOrders.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>📅</Text>
-                        <Text style={styles.emptyTitle}>आज अजून कोणतीही ऑर्डर आलेली नाही</Text>
-                        <Text style={styles.emptySubtitle}>
-                            भिलवडी शाखेकडून आज ऑर्डर आल्यावर ती येथे लगेच दिसेल. जुन्या ऑर्डर्स पाहण्यासाठी वर 'इतिहास पहा' वर क्लिक करा.
+                        <Text style={styles.emptyTitle}>
+                            {viewMode === "today" ? "आज अजून कोणतीही ऑर्डर आलेली नाही" : "कोणतीही ऑर्डर सापडली नाही"}
                         </Text>
-                        <TouchableOpacity style={styles.emptyHistoryBtn} onPress={() => onViewHistory("orders")}>
-                            <Text style={styles.emptyHistoryBtnText}>📜 संपूर्ण ऑर्डर इतिहास उघडा ➔</Text>
+                        <Text style={styles.emptySubtitle}>
+                            {viewMode === "today"
+                                ? "भिलवडी शाखेकडून आज ऑर्डर आल्यावर ती येथे लगेच दिसेल. मागील सर्व ऑर्डर्स पाहण्यासाठी खालील बटणावर क्लिक करा."
+                                : "डेटाबेसमध्ये कोणत्याही ऑर्डर्स उपलब्ध नाहीत."}
+                        </Text>
+                        {viewMode === "today" && orders.length > 0 && (
+                            <TouchableOpacity style={styles.emptyHistoryBtn} onPress={() => setViewMode("all")}>
+                                <Text style={styles.emptyHistoryBtnText}>📋 सर्व {orders.length} ऑर्डर्स येथेच पहा ➔</Text>
+                            </TouchableOpacity>
+
+
+                        )}
+                        <TouchableOpacity style={[styles.emptyHistoryBtn, { marginTop: 8, backgroundColor: "#F1F5F9" }]} onPress={() => onViewHistory("orders")}>
+                            <Text style={[styles.emptyHistoryBtnText, { color: "#334155" }]}>📜 संपूर्ण ऑर्डर इतिहास उघडा ➔</Text>
                         </TouchableOpacity>
+
+
                     </View>
                 ) : (
-                    todayOrders.map((item) => {
+                    displayOrders.map((item) => {
                         const badge = getStatusStyle(item.status);
                         const hasBill = !!item.bill_image_url;
 
@@ -429,10 +537,7 @@ export default function AdminDashboardScreen({
                                             ऑर्डर #{item.id}
                                         </Text>
                                         <Text style={styles.orderMetaText}>
-                                            📅 आज, {new Date(item.created_at).toLocaleTimeString("mr-IN", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
+                                            📅 {formatOrderDateTime(item.created_at)}
                                         </Text>
                                         <View style={styles.orderCreatorBadge}>
                                             <Text style={styles.orderCreatorText}>
@@ -482,6 +587,8 @@ export default function AdminDashboardScreen({
                                     </View>
                                 </View>
                             </TouchableOpacity>
+
+
                         );
                     })
                 )}
@@ -626,15 +733,17 @@ const styles = StyleSheet.create({
     actionGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
-        justifyContent: "space-between",
+        marginHorizontal: -4,
         marginBottom: 8,
-        gap: 8,
     },
     actionGridItem: {
-        width: "48.5%",
+        width: "50%",
+        padding: 4,
+    },
+    actionGridCard: {
         backgroundColor: "#FFFFFF",
         borderRadius: 10,
-        paddingVertical: 8,
+        paddingVertical: 9,
         paddingHorizontal: 8,
         flexDirection: "row",
         alignItems: "center",
@@ -732,30 +841,34 @@ const styles = StyleSheet.create({
     statsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
+        marginHorizontal: -2,
         marginBottom: 10,
     },
     statBox: {
         flex: 1,
         backgroundColor: "#FFFFFF",
         borderRadius: 8,
-        paddingVertical: 6,
+        paddingVertical: 7,
         paddingHorizontal: 2,
         marginHorizontal: 2,
+        minHeight: 54,
+        justifyContent: "center",
         borderLeftWidth: 3,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         alignItems: "center",
     },
     statNum: {
-        fontSize: 15,
-        fontWeight: "800",
+        fontSize: 16,
+        fontWeight: "900",
         color: "#0F172A",
     },
     statTxt: {
         fontSize: 10,
         color: "#64748B",
-        fontWeight: "600",
-        marginTop: 1,
+        fontWeight: "700",
+        marginTop: 2,
+        textAlign: "center",
     },
     statusChipsScroll: {
         marginBottom: 14,
@@ -932,5 +1045,35 @@ const styles = StyleSheet.create({
     },
     billTextPending: {
         color: "#D97706",
+    },
+    viewModeContainer: {
+        flexDirection: "row",
+        backgroundColor: "#E2E8F0",
+        borderRadius: 10,
+        padding: 3,
+        marginVertical: 10,
+    },
+    viewModeBtn: {
+        flex: 1,
+        paddingVertical: 9,
+        alignItems: "center",
+        borderRadius: 8,
+    },
+    viewModeBtnActive: {
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    viewModeText: {
+        fontWeight: "700",
+        color: "#64748B",
+        fontSize: 13,
+    },
+    viewModeTextActive: {
+        color: "#1D4ED8",
+        fontWeight: "800",
     },
 });

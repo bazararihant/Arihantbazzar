@@ -137,10 +137,10 @@ export default function BranchDashboardScreen({
                         </Text>
                         <Text style={styles.branchLocText}>📍 भिलवडी, सांगली</Text>
                     </View>
-                    <Text style={styles.branchTitle}>
+                    <Text style={styles.branchTitle} numberOfLines={1}>
                         {user.franchise_name || "अरिहंत बाजार (भिलवडी, सांगली)"}
                     </Text>
-                    <Text style={styles.userRole}>
+                    <Text style={styles.userRole} numberOfLines={1}>
                         {user.role === "worker"
                             ? `👷‍♂️ ${user.name} (कामगार - फक्त ऑर्डर नोंदणी)`
                             : user.role === "sub_admin"
@@ -148,7 +148,7 @@ export default function BranchDashboardScreen({
                             : `🏢 ${user.name} (शाखा व्यवस्थापक)`}
                     </Text>
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
                     {user.role !== "worker" && onViewHistory && (
                         <TouchableOpacity
                             style={{
@@ -316,11 +316,14 @@ export default function BranchDashboardScreen({
                                             ऑर्डर #{item.id}
                                         </Text>
                                         <Text style={styles.orderDate}>
-                                            📅 {new Date(item.created_at).toLocaleString("mr-IN", {
-                                                month: "short",
+                                            📅 {new Date(item.created_at).toLocaleDateString("mr-IN", {
                                                 day: "numeric",
+                                                month: "short",
+                                                year: "numeric",
+                                            })} • {new Date(item.created_at).toLocaleTimeString("mr-IN", {
                                                 hour: "2-digit",
                                                 minute: "2-digit",
+                                                hour12: true,
                                             })}
                                         </Text>
                                     </View>
@@ -361,28 +364,26 @@ export default function BranchDashboardScreen({
                                         ) : null}
                                     </View>
 
-                                    {/* Bill Status Indicator - Only for Admin */}
-                                    {user.role === "admin" && (
-                                        <View
+                                    {/* Bill Status Indicator */}
+                                    <View
+                                        style={[
+                                            styles.billBadge,
+                                            hasBill
+                                                ? styles.billBadgeUploaded
+                                                : styles.billBadgePending,
+                                        ]}
+                                    >
+                                        <Text
                                             style={[
-                                                styles.billBadge,
+                                                styles.billBadgeText,
                                                 hasBill
-                                                    ? styles.billBadgeUploaded
-                                                    : styles.billBadgePending,
+                                                    ? styles.billBadgeTextUploaded
+                                                    : styles.billBadgeTextPending,
                                             ]}
                                         >
-                                            <Text
-                                                style={[
-                                                    styles.billBadgeText,
-                                                    hasBill
-                                                        ? styles.billBadgeTextUploaded
-                                                        : styles.billBadgeTextPending,
-                                                ]}
-                                            >
-                                                {hasBill ? "बिल जोडले ✅" : "बिल बाकी 📷"}
-                                            </Text>
-                                        </View>
-                                    )}
+                                            {hasBill ? "बिल जोडले ✅" : "बिल बाकी 📷"}
+                                        </Text>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         );
@@ -410,6 +411,7 @@ const styles = StyleSheet.create({
     },
     branchHeader: {
         flex: 1,
+        marginRight: 8,
     },
     branchBadgeRow: {
         flexDirection: "row",
@@ -517,13 +519,15 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#FFFFFF",
         borderRadius: 8,
-        paddingVertical: 6,
+        paddingVertical: 8,
         paddingHorizontal: 2,
         marginHorizontal: 2,
         borderLeftWidth: 3,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         alignItems: "center",
+        justifyContent: "center",
+        minHeight: 56,
     },
     statNumber: {
         fontSize: 15,

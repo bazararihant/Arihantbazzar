@@ -16,6 +16,7 @@ import {
     updateOrder,
     deleteOrder,
     getExpenseReport,
+    cleanupOldImagesHandler,
 } from "../controllers/orderController";
 import { authenticateToken } from "../middleware/authMiddleware";
 
@@ -34,6 +35,7 @@ router.use(authenticateToken);
 router.get("/franchises", getFranchises);
 router.get("/dashboard/stats", getDashboardStats);
 router.get("/reports/expense", getExpenseReport);
+router.post("/cleanup-old-images", cleanupOldImagesHandler);
 router.post("/", createOrder);
 router.get("/", getOrders);
 router.get("/:id", getOrderById);
